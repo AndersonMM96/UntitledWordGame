@@ -8,14 +8,14 @@ public class Board : MonoBehaviour
 {
     public Game game; 
     public int health = 500;
-    private bool boardEnabled = false;
+    public bool boardEnabled = false;
     [SerializeField] protected int playerNumber = 0;
 
     public Tile tilePrefab;
 
     public Tile[,] grid = new Tile[4,4];
     public List<Tile> word = new List<Tile>();
-    private bool validWord;
+    public bool validWord;
 
     public Transform Selector;
     public Vector2Int selectorPosition = new Vector2Int(0, 0);
@@ -25,13 +25,15 @@ public class Board : MonoBehaviour
     private Dictionary dictionary;
     private TextBar HealthBar;
 
+    public ParticleSystem TileGib;
+
     private void Awake()
     {
         HealthBar = transform.GetChild(3).GetComponent<TextBar>();
         HealthBar.text = health.ToString("000");
         dictionary = GameObject.Find("Dictionary").GetComponent<Dictionary>();
         Selector = transform.GetChild(0);
-        FillGrid(true);
+        //FillGrid(true);
         selectorPosition = new Vector2Int(0, 3);
         validWord = false;
     }
@@ -99,8 +101,6 @@ public class Board : MonoBehaviour
     {
         if (b && word.Count > 0 && playerNumber == playernum && boardEnabled)
         {
-            word[word.Count - 1].GetComponent<SpriteRenderer>().color = Color.white;
-            word[word.Count - 1].GetComponent<SpriteAnimator>().shake = false;
             word[word.Count - 1].wordIndex = -1;
             word.RemoveAt(word.Count - 1);
             CheckValidity();
@@ -110,18 +110,6 @@ public class Board : MonoBehaviour
     {
         string w = GetWord();
         validWord = w.Length >= 3 && dictionary.ContainsWord(w);
-        if(validWord)
-            foreach(Tile t in word)
-            {
-                t.GetComponent<SpriteRenderer>().color = Color.white;
-                t.GetComponent<SpriteAnimator>().shake = false;
-            }
-        else
-            foreach (Tile t in word)
-            {
-                t.GetComponent<SpriteRenderer>().color = Color.gray;
-                t.GetComponent<SpriteAnimator>().shake = true;
-            }
     }
     private void SubmitWord(int playernum, bool b)
     {
@@ -132,20 +120,16 @@ public class Board : MonoBehaviour
                 string w = GetWord();
                 double points = ScoreWord(w);
                 Debug.Log(w + " - " + points + " Points");
-                foreach (Tile t in word)
-                    DestroyTile((int)t.gridIndex.x, (int)t.gridIndex.y);
-                word.Clear();
-                FillGrid(false);
 
                 //Send word to game
-                game.SendScore(points);
+                StartCoroutine(game.SendScore(points));
             }
             else
                 Debug.LogWarning(GetWord() + " - Not a valid word!");
         }
     }
 
-    private void FillGrid(bool replace)
+    public void FillGrid(bool replace)
     {
         for(int i = 0; i < 4; i++)
         {
@@ -161,11 +145,46 @@ public class Board : MonoBehaviour
         }
     }
 
-    private void DestroyTile(int i, int j)
+    public void DropTiles()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 1; j < 4; j++)
+            {
+                DropTile(i, j);
+            }
+        }
+    }
+    private void DropTile(int i, int j)
+    {
+        while(j > 0)
+        {
+            j--;
+            if (grid[i, j] == null)
+            {
+                grid[i, j] = grid[i, j + 1];
+                grid[i, j + 1] = null;
+                if (grid[i, j] != null)
+                    grid[i, j].gridIndex = new Vector2(i, j);
+            }
+            else
+                break;
+        }
+    }
+
+    public void DestroyTile(int i, int j)
     {
         //Debug.LogWarning("Destroying " + grid[i, j].name + " (" + i + ", " + j + ")");
+        StartCoroutine(EmitTileGib(grid[i, j].transform.position));
         Destroy(grid[i, j].gameObject);
         grid[i, j] = null;
+    }
+    private IEnumerator EmitTileGib(Vector3 position)
+    {
+        ParticleSystem gib = Instantiate(TileGib, position, Quaternion.identity, transform);
+        gib.Emit(10);
+        yield return new WaitForSeconds(1f);
+        Destroy(gib.gameObject);
     }
 
     public string GetWord()
@@ -192,7 +211,7 @@ public class Board : MonoBehaviour
         while (LetterCount(letter[0]) >= 4)
             letter = GetRandomLetter();
 
-        Tile tile = Instantiate(tilePrefab, transform.position + (Vector3)position + Vector3.up * 4f, Quaternion.identity, transform);
+        Tile tile = Instantiate(tilePrefab, transform.position + (Vector3)position + Vector3.up * 10f, Quaternion.identity, transform);
         tile.value = letter;
         tile.gridIndex = position;
         tile.board = this;
@@ -424,21 +443,13 @@ public class Board : MonoBehaviour
     public void SetBoardState(bool enabled)
     {
         boardEnabled = enabled;
-        if (boardEnabled)
-        {
-            foreach (Tile t in grid)
-            {
-                t.GetComponent<SpriteRenderer>().color = Color.white;
-            }
-        }
-        else
-        {
-            foreach (Tile t in grid)
-            {
-                t.GetComponent<SpriteRenderer>().color = Color.gray;
+    }
+    public void ResetWord()
+    {
+        foreach (Tile t in grid)
+            if (t != null)
                 t.wordIndex = -1;
-            }
-        }
+        word.Clear();
     }
 
     public void AddHealth(int n)

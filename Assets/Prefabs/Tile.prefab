@@ -186,7 +186,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   shake: 0
-  shakeInterval: 0.1
+  shakeInterval: 0.05
   shakeIntensity: 0.025
   shakeOffset: {x: 0, y: 0, z: 0}
   flash: 0

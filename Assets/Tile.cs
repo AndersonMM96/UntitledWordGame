@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 public class Tile : MonoBehaviour
@@ -42,6 +43,34 @@ public class Tile : MonoBehaviour
 
         if(board != null)
         {
+            if(board.boardEnabled)
+            {
+                if (wordIndex == -1 || board.validWord)
+                {
+                    GetComponent<SpriteRenderer>().color = Color.white;
+                    GetComponent<SpriteAnimator>().shake = false;
+                }
+                else
+                {
+                    GetComponent<SpriteRenderer>().color = Color.gray;
+                    GetComponent<SpriteAnimator>().shake = true;
+                }
+            }
+            else
+            {
+                if (wordIndex != -1 && board.validWord)
+                {
+                    GetComponent<SpriteRenderer>().color = Color.white;
+                    GetComponent<SpriteAnimator>().shake = true;
+                    GetComponent<SpriteAnimator>().shakeIntensity = 0.05f;
+                }
+                else
+                {
+                    GetComponent<SpriteRenderer>().color = Color.gray;
+                    GetComponent<SpriteAnimator>().shake = false;
+                }
+            }
+
             if (wordIndex == -1)
             {
                 transform.position = Vector3.MoveTowards(transform.position, board.transform.position + (Vector3)gridIndex, 30f * Time.deltaTime);
@@ -120,7 +149,7 @@ public class Tile : MonoBehaviour
             case 0: return Vector2.zero;
             case 1: return Vector2.up;
             case 2: return Vector2.right;
-            case 3: return new Vector2(-1, 1);
+            case 3: return new Vector2(-1, -1);
             default: return Vector2.zero;
         }
     }

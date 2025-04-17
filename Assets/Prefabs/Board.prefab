@@ -110,6 +110,7 @@ MonoBehaviour:
   pulseInterval: 1.25
   pulseIntensity: 0.15
   pulseSpeed: 0.25
+  pulseTimer: 0
   pulseOffset: {x: 0, y: 0, z: 0}
   rotate: 1
   rotateDirection: 1
@@ -194,11 +195,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e90028182cf58641b4e2ae9e40e7f6a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  game: {fileID: 0}
+  health: 500
+  boardEnabled: 0
   playerNumber: 0
   tilePrefab: {fileID: -4333197153571588652, guid: 788ff6bfb0f70ba45a2104f6f2a6a9b9, type: 3}
   word: []
+  validWord: 0
   Selector: {fileID: 0}
   selectorPosition: {x: 0, y: 0}
+  TileGib: {fileID: 6076199780609258881, guid: a0c1bdb847e5a354b86567195003942c, type: 3}
 --- !u!114 &7771495598215484347
 MonoBehaviour:
   m_ObjectHideFlags: 0

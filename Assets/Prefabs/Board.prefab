@@ -204,6 +204,7 @@ MonoBehaviour:
   validWord: 0
   Selector: {fileID: 0}
   selectorPosition: {x: 0, y: 0}
+  canScramble: 1
   TileGib: {fileID: 6076199780609258881, guid: a0c1bdb847e5a354b86567195003942c, type: 3}
 --- !u!114 &7771495598215484347
 MonoBehaviour:
@@ -298,6 +299,10 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: 0e0e347c-6479-4801-922b-36c883750751
     m_ActionName: gameplay/Enter[/Keyboard/enter]
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: cf2aebe9-b19c-418a-877a-7392b029140d
+    m_ActionName: gameplay/Scramble[/Keyboard/q,/SwitchProControllerHID/buttonWest]
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: gameplay
@@ -321,6 +326,7 @@ MonoBehaviour:
   Select: 0
   Back: 0
   Enter: 0
+  Scramble: 0
 --- !u!1 &6337899078854794449
 GameObject:
   m_ObjectHideFlags: 0

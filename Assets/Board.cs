@@ -6,14 +6,14 @@ using UnityEngine.UIElements;
 
 public class Board : MonoBehaviour
 {
-    public Game game; 
-    public int health = 500;
+    public Game game;
+    public int health;
     public bool boardEnabled = false;
     [SerializeField] protected int playerNumber = 0;
 
     public Tile tilePrefab;
 
-    public Tile[,] grid = new Tile[4,4];
+    public Tile[,] grid = new Tile[4, 4];
     public List<Tile> word = new List<Tile>();
     public bool validWord;
 
@@ -21,6 +21,8 @@ public class Board : MonoBehaviour
     public Vector2Int selectorPosition = new Vector2Int(0, 0);
     private Vector2 Movement;
     private float moveCooldown;
+
+    public bool canScramble = true;
 
     private Dictionary dictionary;
     private TextBar HealthBar;
@@ -45,6 +47,7 @@ public class Board : MonoBehaviour
         InputManager.GetSelectEvent += SelectTile;
         InputManager.GetBackEvent += DeselectTile;
         InputManager.GetEnterEvent += SubmitWord;
+        InputManager.GetScrambleEvent += Scramble;
     }
 
     private void Update()
@@ -57,23 +60,26 @@ public class Board : MonoBehaviour
             moveCooldown = 0.3f;
             MoveSelector();
         }
-        CheckValidity();
+        //CheckValidity();
     }
 
     private void GetMovement(int playernum, Vector2 v)
     {
-        if(playerNumber == playernum)
+        if (playerNumber == playernum)
         {
             moveCooldown = 0f;
             Movement = v;
         }
     }
+    private float Sign(float i)
+    {
+        if (i == 0)
+            return 0;
+        return Mathf.Sign(i);
+    }
     private void MoveSelector()
     {
-        if (Movement.x != 0)
-            selectorPosition.x += (int)(Mathf.Sign(Movement.x) * 1);
-        if (Movement.y != 0)
-            selectorPosition.y += (int)(Mathf.Sign(Movement.y) * 1);
+        selectorPosition += new Vector2Int((int)Movement.x, (int)Movement.y);
 
         if (selectorPosition.x < 0)
             selectorPosition.x = 3;
@@ -95,7 +101,7 @@ public class Board : MonoBehaviour
             }
             CheckValidity();
         }
-            
+
     }
     private void DeselectTile(int playernum, bool b)
     {
@@ -110,19 +116,21 @@ public class Board : MonoBehaviour
     {
         string w = GetWord();
         validWord = w.Length >= 3 && dictionary.ContainsWord(w);
+        game.UpdateReaction(ScoreWord(w), validWord);
     }
     private void SubmitWord(int playernum, bool b)
     {
-        if(b && playerNumber == playernum && boardEnabled)
+        if (b && playerNumber == playernum && boardEnabled)
         {
             if (validWord)
             {
+                //code for displaying word scores in console--otherwise these 3 lines can be removed
                 string w = GetWord();
                 double points = ScoreWord(w);
                 Debug.Log(w + " - " + points + " Points");
 
                 //Send word to game
-                StartCoroutine(game.SendScore(points));
+                StartCoroutine(game.SendScore());
             }
             else
                 Debug.LogWarning(GetWord() + " - Not a valid word!");
@@ -131,20 +139,28 @@ public class Board : MonoBehaviour
 
     public void FillGrid(bool replace)
     {
-        for(int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 4; j++)
             {
-                if(replace || grid[i, j] == null)
+                if (replace || grid[i, j] == null)
                 {
-                    if(grid[i, j] != null)
+                    if (grid[i, j] != null)
                         DestroyTile(i, j);
-                    grid[i,j] = MakeTile(new Vector2(i, j));
+                    grid[i, j] = MakeTile(new Vector2(i, j));
                 }
             }
         }
     }
-
+    private void Scramble(int playernum, bool b)
+    {
+        if (playernum == playerNumber && b && canScramble && boardEnabled)
+        {
+            ResetWord();
+            FillGrid(true);
+            canScramble = false;
+        }
+    }
     public void DropTiles()
     {
         for (int i = 0; i < 4; i++)
@@ -157,7 +173,7 @@ public class Board : MonoBehaviour
     }
     private void DropTile(int i, int j)
     {
-        while(j > 0)
+        while (j > 0)
         {
             j--;
             if (grid[i, j] == null)
@@ -196,7 +212,7 @@ public class Board : MonoBehaviour
         }
         return letters;
     }
-    public double ScoreWord(string word)
+    public static double ScoreWord(string word)
     {
         double points = 0;
         for (int i = 0; i < word.Length; i++)
@@ -262,6 +278,69 @@ public class Board : MonoBehaviour
         value = char.ToUpper(value);
         switch (value)
         {
+            case 'A': return 1.0;
+            case 'B': return 1.5;
+            case 'C': return 1.5;
+            case 'D': return 1.0;
+            case 'E': return 1.0;
+            case 'F': return 1.5;
+            case 'G': return 1.25;
+            case 'H': return 1.5;
+            case 'I': return 1.0;
+            case 'J': return 2.5;
+            case 'K': return 2.25;
+            case 'L': return 1.25;
+            case 'M': return 1.5;
+            case 'N': return 1.0;
+            case 'O': return 1.0;
+            case 'P': return 1.25;
+            case 'Q': return 2.5;
+            case 'R': return 1.0;
+            case 'S': return 1.0;
+            case 'T': return 1.0;
+            case 'U': return 1.0;
+            case 'V': return 2.0;
+            case 'W': return 2.0;
+            case 'X': return 2.75;
+            case 'Y': return 1.75;
+            case 'Z': return 3.0;
+            default: return 0;
+        }
+        /*
+        switch (value)
+        {
+            case 'A': return 1.0;
+            case 'B': return 1.25;
+            case 'C': return 1.25;
+            case 'D': return 1.0;
+            case 'E': return 1.0;
+            case 'F': return 1.25;
+            case 'G': return 1.0;
+            case 'H': return 1.25;
+            case 'I': return 1.0;
+            case 'J': return 1.75;
+            case 'K': return 1.75;
+            case 'L': return 1.0;
+            case 'M': return 1.25;
+            case 'N': return 1.0;
+            case 'O': return 1.0;
+            case 'P': return 1.25;
+            case 'Q': return 1.75;
+            case 'R': return 1.0;
+            case 'S': return 1.0;
+            case 'T': return 1.0;
+            case 'U': return 1.0;
+            case 'V': return 1.5;
+            case 'W': return 1.5;
+            case 'X': return 2.0;
+            case 'Y': return 1.5;
+            case 'Z': return 2.0;
+            default: return 0;
+        }
+        */
+        /*
+        switch (value)
+        {
             case 'A': return 1;
             case 'B': return 1.5;
             case 'C': return 1.5;
@@ -290,6 +369,7 @@ public class Board : MonoBehaviour
             case 'Z': return 4.0;
             default: return 0;
         }
+        */
     }
     public static char GetLetter(int index)
     {
@@ -452,6 +532,12 @@ public class Board : MonoBehaviour
         word.Clear();
     }
 
+    public void SetHealth(int n)
+    {
+        health = n;
+        HealthBar.text = health.ToString("000");
+        HealthBar.UpdateLetters();
+    }
     public void AddHealth(int n)
     {
         health += n;

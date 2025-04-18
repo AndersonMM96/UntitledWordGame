@@ -115,19 +115,25 @@ public class Tile : MonoBehaviour
         else if(transform.childCount > value.Length)
         {
             //delete excess letters
-            Destroy(transform.GetChild(transform.childCount - 1).gameObject);
-        }
-        for(int i = 0; i < value.Length; i++)
-        {
-            try
+            for (int i = 0; i < transform.childCount - value.Length; i++)
             {
-                transform.GetChild(i).GetComponent<SpriteRenderer>().sprite = letterSprites[Board.GetIndex(value[i])];
-                transform.GetChild(i).name = "Letter " + value[i];
-                transform.GetChild(i).position = transform.position + (Vector3)GetLetterPosition(i);
+                Destroy(transform.GetChild(transform.childCount - 1).gameObject);
             }
-            catch
+        }
+        else
+        {
+            for (int i = 0; i < value.Length; i++)
             {
-                Debug.LogError(value[i] + " is not a valid character!");
+                try
+                {
+                    transform.GetChild(i).GetComponent<SpriteRenderer>().sprite = letterSprites[Board.GetIndex(value[i])];
+                    transform.GetChild(i).name = "Letter " + value[i];
+                    transform.GetChild(i).position = transform.position + (Vector3)GetLetterPosition(i);
+                }
+                catch
+                {
+                    Debug.LogError(value[i] + " is not a valid character!");
+                }
             }
         }
     }

@@ -16,16 +16,20 @@ public class InputManager : MonoBehaviour
 
     [SerializeField] private bool logInputs;
     [SerializeField] private int overridePlayerNumber = -1;
+    private Vector2 lastMovement;
 
+    //[SerializeField] public Vector2 Movement;
     [SerializeField] public Vector2 Movement;
     [SerializeField] public InputButtonState Select;
     [SerializeField] public InputButtonState Back;
     [SerializeField] public InputButtonState Enter;
+    [SerializeField] public InputButtonState Scramble;
 
     [HideInInspector] public static Action<int, Vector2> GetMovementEvent;
     [HideInInspector] public static Action<int, bool> GetSelectEvent;
     [HideInInspector] public static Action<int, bool> GetBackEvent;
     [HideInInspector] public static Action<int, bool> GetEnterEvent;
+    [HideInInspector] public static Action<int, bool> GetScrambleEvent;
 
 
     private void Awake()
@@ -58,13 +62,22 @@ public class InputManager : MonoBehaviour
         UpdatePlayerIndex(player);
         Enter = UpdateButtonState(Enter, GetEnterEvent, player.actions.FindAction("Enter"));
     }
+    public void ScrambleInput(PlayerInput player)
+    {
+        UpdatePlayerIndex(player);
+        Scramble = UpdateButtonState(Scramble, GetScrambleEvent, player.actions.FindAction("Scramble"));
+    }
     public void MovementInput(PlayerInput player)
     {
         UpdatePlayerIndex(player);
         Movement = player.actions.FindAction("Movement").ReadValue<Vector2>();
-        if (logInputs)
-            Debug.Log("Player " + (playerIndex + 1) + " " + Movement.ToString());
-        GetMovementEvent?.Invoke(playerIndex, Movement);
+        if (Movement != lastMovement)
+        {
+            lastMovement = Movement;
+            if (logInputs)
+                Debug.Log("Player " + (playerIndex + 1) + " " + Movement.ToString());
+            GetMovementEvent?.Invoke(playerIndex, Movement);
+        }
     }
 
     private InputButtonState UpdateButtonState(InputButtonState buttonState, Action<int, bool> buttonEvent, InputAction input)

@@ -8,10 +8,15 @@ public class Game : MonoBehaviour
     public Board[] boards;
     bool turn = true;
 
+    private int maxHP = 999;
+
+    private bool enableTimer = false;
     private float timer;
     private TextBar TimerBar;
     public float maxTime = 15f;
     private bool updateTimer;
+
+    private string[] reactions = new string[] { "", "", "", "", "", "", "", "", "Good", "Great", "Awesome!", "Fantastic!", "INSANE!", "UNREAL!", "EXTRAORDINARY!", "UNFATHOMABLE", "GODLY" };
 
     // Start is called before the first frame update
     void Start()
@@ -22,14 +27,17 @@ public class Game : MonoBehaviour
 
         boards[0].game = this;
         boards[1].game = this;
+        boards[0].SetHealth(maxHP);
+        boards[1].SetHealth(maxHP);
         boards[0].FillGrid(true);
         boards[1].FillGrid(true);
+        UpdateReaction(0, false);
         SwitchTurn(turn);
     }
 
     private void Update()
     {
-        if(updateTimer)
+        if(updateTimer && enableTimer)
         {
             timer -= Time.deltaTime;
             transform.GetChild(2).gameObject.SetActive(false);
@@ -51,7 +59,34 @@ public class Game : MonoBehaviour
         }
     }
 
-    public IEnumerator SendScore(double score)
+    public void UpdateReaction(double score, bool valid)
+    {
+        //Debug.Log(score);
+        string text = "";
+        if(valid)
+        {
+            if (score >= reactions.Length)
+            {
+                text = reactions[reactions.Length];
+            }
+            else
+            {
+                for (int i = 1; i < reactions.Length; i++)
+                {
+                    if (score < i)
+                    {
+                        text = reactions[i - 1];
+                        break;
+                    }
+                }
+            }
+        }
+        transform.GetChild(5).GetComponent<TextBar>().text = text;
+        transform.GetChild(5).GetComponent<TextBar>().bob = true;
+        transform.GetChild(5).GetComponent<TextBar>().UpdateLetters();
+    }
+
+    public IEnumerator SendScore()
     {
         updateTimer = false;
         Board current, other;
@@ -70,19 +105,27 @@ public class Game : MonoBehaviour
 
 
         //Destroy current board's word tiles
-        for(int i = 0; i < current.word.Count; i++)
+        TextBar scoreBar = transform.GetChild(4).GetComponent<TextBar>();
+        scoreBar.text = "";
+        double points = 0.0;
+        int damage = 0;
+        for (int i = 0; i < current.word.Count; i++)
         {
+            points += Board.GetPoints(current.GetWord()[i]);
+            damage = Mathf.FloorToInt(2f * Mathf.Pow((float)points, 2)) + 1;
             current.DestroyTile((int)current.word[i].gridIndex.x, (int)current.word[i].gridIndex.y);
+            scoreBar.text = damage.ToString();
+            scoreBar.GetComponent<SpriteAnimator>().pulse = true;
             yield return new WaitForSeconds(0.2f);
+            scoreBar.GetComponent<SpriteAnimator>().pulse = false;
         }
         current.ResetWord();
-
         //deal damage to other board
-        other.AddHealth(-Mathf.RoundToInt(Mathf.Pow((float)score, 2)));
+        other.AddHealth(-damage);
         if(other.health <= 0)
         {
             //lose
-            other.health = 0;
+            other.SetHealth(0);
         }
         else
         {
@@ -92,11 +135,14 @@ public class Game : MonoBehaviour
             yield return new WaitForSeconds(0.5f);
 
             //switch turn and set other board to be active
+            scoreBar.text = "";
             timer = maxTime;
             updateTimer = true;
             turn = !turn;
+            UpdateReaction(0, false);
             other.SetBoardState(true);
             other.ResetWord();
+            other.canScramble = true;
         }
     }
     private IEnumerator TimesUp()

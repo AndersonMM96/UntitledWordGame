@@ -24,7 +24,7 @@ public class SpriteAnimator : MonoBehaviour
     public bool pulse = false;
     [SerializeField] public float pulseInterval = 1f;
     [SerializeField] public float pulseIntensity = 0.25f;
-    [SerializeField] public float pulseSpeed = 0.005f;
+    [SerializeField] public float pulseSpeed = 0.5f;
     [SerializeField] private float pulseTimer;
     public Vector3 pulseOffset;
 
@@ -33,6 +33,11 @@ public class SpriteAnimator : MonoBehaviour
     [SerializeField] public float rotateSpeed = 15f;
     private float rotation;
 
+    public bool bob = false;
+    [SerializeField] public float bobIntensity = 0.5f;
+    [SerializeField] public float bobSpeed = 1f;
+    [SerializeField] public float bobTimer;
+    public Vector3 bobOffset;
 
     private void Update()
     {
@@ -123,6 +128,21 @@ public class SpriteAnimator : MonoBehaviour
         {
             rotation = 0f;
             transform.rotation = Quaternion.identity;
+        }
+        //Bob
+        if (bob)
+        {
+            bobTimer -= Time.deltaTime;
+            if(bobTimer <= 0)
+            {
+                bobTimer = 2f / bobSpeed;
+            }
+            bobOffset = new Vector3(0f, bobIntensity * Mathf.Sin(1.5f * Mathf.Sin(Mathf.PI * bobSpeed * bobTimer)), 0f);
+        }
+        else
+        {
+            bobTimer = 0f;
+            bobOffset = Vector3.zero;
         }
     }
 

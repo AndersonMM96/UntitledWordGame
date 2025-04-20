@@ -44,7 +44,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0fc2b9d67281dbc478b0f15bd33436f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  text: 
+  sortingOrder: 0
+  animSpeed: 15
+  letters: []
   letterSprites:
   - {fileID: -1707480296, guid: 6197aea2cab9b3d468da592d055ff9f7, type: 3}
   - {fileID: 1713107269, guid: 6197aea2cab9b3d468da592d055ff9f7, type: 3}
@@ -111,3 +113,6 @@ MonoBehaviour:
   - {fileID: 1809213083, guid: 6197aea2cab9b3d468da592d055ff9f7, type: 3}
   - {fileID: -1668724317, guid: 6197aea2cab9b3d468da592d055ff9f7, type: 3}
   - {fileID: 415954535, guid: 6197aea2cab9b3d468da592d055ff9f7, type: 3}
+  - {fileID: 0}
+  shake: 0
+  bob: 0

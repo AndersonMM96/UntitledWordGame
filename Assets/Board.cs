@@ -9,6 +9,8 @@ public class Board : MonoBehaviour
     public Game game;
     public int health;
     public bool boardEnabled = false;
+    public bool movementEnabled;
+    public bool shakeBoard = false;
     [SerializeField] protected int playerNumber = 0;
 
     public Tile tilePrefab;
@@ -19,8 +21,10 @@ public class Board : MonoBehaviour
 
     public Transform Selector;
     public Vector2Int selectorPosition = new Vector2Int(0, 0);
-    private Vector2 Movement;
+    private Vector2Int heldDirection;
+    private bool[] directions;
     private float moveCooldown;
+    private float moveInterval = 0.15f;
 
     public bool canScramble = true;
 
@@ -32,12 +36,12 @@ public class Board : MonoBehaviour
     private void Awake()
     {
         HealthBar = transform.GetChild(3).GetComponent<TextBar>();
-        HealthBar.text = health.ToString("000");
-        dictionary = GameObject.Find("Dictionary").GetComponent<Dictionary>();
+        HealthBar.SetText(health.ToString("000"));
+        dictionary = GameObject.Find("Game").GetComponent<Dictionary>();
         Selector = transform.GetChild(0);
-        //FillGrid(true);
         selectorPosition = new Vector2Int(0, 3);
         validWord = false;
+        directions = new bool[4];
     }
 
     private void Start()
@@ -52,23 +56,41 @@ public class Board : MonoBehaviour
 
     private void Update()
     {
-        //TODO: fix movement the current system is very bad
         Selector.position = transform.GetChild(1).position + (Vector3)(Vector2)selectorPosition;
         moveCooldown -= Time.deltaTime;
-        if (moveCooldown <= 0f)
+        if (moveCooldown <= 0f && movementEnabled)
         {
-            moveCooldown = 0.3f;
-            MoveSelector();
+            moveCooldown = moveInterval;
+            MoveSelector(heldDirection);
         }
-        //CheckValidity();
     }
 
     private void GetMovement(int playernum, Vector2 v)
     {
-        if (playerNumber == playernum)
+        if (playerNumber == playernum && movementEnabled)
         {
-            moveCooldown = 0f;
-            Movement = v;
+            bool[] newDirections = new bool[] { false, false, false, false };
+            if(v.y > 0)
+                newDirections[0] = true;
+            if (v.x > 0)
+                newDirections[1] = true;
+            if (v.y < 0)
+                newDirections[2] = true;
+            if (v.x < 0)
+                newDirections[3] = true;
+
+            if (newDirections[0] && !directions[0])
+                MoveSelector(Vector2Int.up);
+            if (newDirections[1] && !directions[1])
+                MoveSelector(Vector2Int.right);
+            if (newDirections[2] && !directions[2])
+                MoveSelector(Vector2Int.down);
+            if (newDirections[3] && !directions[3])
+                MoveSelector(Vector2Int.left);
+
+            directions = newDirections;
+            heldDirection = new Vector2Int(Mathf.RoundToInt(v.x), Mathf.RoundToInt(v.y));
+            moveCooldown = moveInterval;
         }
     }
     private float Sign(float i)
@@ -77,9 +99,9 @@ public class Board : MonoBehaviour
             return 0;
         return Mathf.Sign(i);
     }
-    private void MoveSelector()
+    private void MoveSelector(Vector2Int direction)
     {
-        selectorPosition += new Vector2Int((int)Movement.x, (int)Movement.y);
+        selectorPosition += direction;
 
         if (selectorPosition.x < 0)
             selectorPosition.x = 3;
@@ -92,20 +114,20 @@ public class Board : MonoBehaviour
     }
     private void SelectTile(int playernum, bool b)
     {
-        if (b && playerNumber == playernum && boardEnabled)
+        if (b && playerNumber == playernum && boardEnabled && movementEnabled)
         {
             if (grid[selectorPosition.x, selectorPosition.y].wordIndex == -1)
             {
                 word.Add(grid[selectorPosition.x, selectorPosition.y]);
                 word[word.Count - 1].wordIndex = word.Count;
+                CheckValidity();
             }
-            CheckValidity();
         }
 
     }
     private void DeselectTile(int playernum, bool b)
     {
-        if (b && word.Count > 0 && playerNumber == playernum && boardEnabled)
+        if (b && word.Count > 0 && playerNumber == playernum && boardEnabled && movementEnabled)
         {
             word[word.Count - 1].wordIndex = -1;
             word.RemoveAt(word.Count - 1);
@@ -120,7 +142,7 @@ public class Board : MonoBehaviour
     }
     private void SubmitWord(int playernum, bool b)
     {
-        if (b && playerNumber == playernum && boardEnabled)
+        if (b && playerNumber == playernum && boardEnabled && movementEnabled)
         {
             if (validWord)
             {
@@ -147,14 +169,14 @@ public class Board : MonoBehaviour
                 {
                     if (grid[i, j] != null)
                         DestroyTile(i, j);
-                    grid[i, j] = MakeTile(new Vector2(i, j));
+                    grid[i, j] = MakeTile(new Vector2Int(i, j));
                 }
             }
         }
     }
     private void Scramble(int playernum, bool b)
     {
-        if (playernum == playerNumber && b && canScramble && boardEnabled)
+        if (playernum == playerNumber && b && canScramble && boardEnabled && movementEnabled)
         {
             ResetWord();
             FillGrid(true);
@@ -181,7 +203,7 @@ public class Board : MonoBehaviour
                 grid[i, j] = grid[i, j + 1];
                 grid[i, j + 1] = null;
                 if (grid[i, j] != null)
-                    grid[i, j].gridIndex = new Vector2(i, j);
+                    grid[i, j].gridIndex = new Vector2Int(i, j);
             }
             else
                 break;
@@ -208,7 +230,7 @@ public class Board : MonoBehaviour
         string letters = "";
         foreach (Tile tile in word)
         {
-            letters += tile.value;
+            letters += tile.GetValue();
         }
         return letters;
     }
@@ -221,14 +243,14 @@ public class Board : MonoBehaviour
         }
         return points;
     }
-    public Tile MakeTile(Vector2 position)
+    public Tile MakeTile(Vector2Int position)
     {
         string letter = GetRandomLetter();
         while (LetterCount(letter[0]) >= 4)
             letter = GetRandomLetter();
 
-        Tile tile = Instantiate(tilePrefab, transform.position + (Vector3)position + Vector3.up * 10f, Quaternion.identity, transform);
-        tile.value = letter;
+        Tile tile = Instantiate(tilePrefab, transform.position + (Vector3)(Vector2)position + Vector3.up * 10f, Quaternion.identity, transform);
+        tile.SetValue(letter);
         tile.gridIndex = position;
         tile.board = this;
         return tile;
@@ -266,7 +288,7 @@ public class Board : MonoBehaviour
             for (int j = 0; j < 4; j++)
             {
                 if (grid[i, j] != null)
-                    foreach (char c in grid[i, j].value)
+                    foreach (char c in grid[i, j].GetValue())
                         if (c.Equals(letter))
                             count++;
             }
@@ -473,6 +495,7 @@ public class Board : MonoBehaviour
             case '?': return 62;
             case '!': return 63;
             case '-': return 64;
+            case ' ': return 65;
             default: return -1;
         }
     }
@@ -535,13 +558,24 @@ public class Board : MonoBehaviour
     public void SetHealth(int n)
     {
         health = n;
-        HealthBar.text = health.ToString("000");
-        HealthBar.UpdateLetters();
+        HealthBar.SetText(health.ToString("000"));
     }
     public void AddHealth(int n)
     {
         health += n;
-        HealthBar.text = health.ToString("000");
-        HealthBar.UpdateLetters();
+        HealthBar.SetText(health.ToString("000"));
+    }
+    public IEnumerator TickHealth(int n)
+    {
+        if (n < 0)
+            n = 0;
+        while (health != n)
+        {
+            if(health > n)
+                SetHealth(health - 1);
+            else
+                SetHealth(health + 1);
+            yield return new WaitForSeconds(0.004f);
+        }
     }
 }

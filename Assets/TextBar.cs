@@ -8,21 +8,28 @@ using UnityEngine.UIElements;
 
 public class TextBar : MonoBehaviour
 {
-    public string text;
+    private string text;
+    public int sortingOrder;
+    public float animSpeed;
     public List<GameObject> letters;
     [SerializeField] protected List<Sprite> letterSprites;
 
     public bool shake, bob = false;
 
+    private Vector3 target;
+
     private void Awake()
     {
+        SetText("");
         letters = new List<GameObject>();
-        UpdateLetters();
     }
 
     private void Update()
     {
-        UpdateLetters();
+        for(int i = 0; i < letters.Count; i++)
+        {
+            letters[i].transform.position = Vector3.MoveTowards(letters[i].transform.position, transform.position + (Vector3)GetLetterPosition(i) + letters[i].GetComponent<SpriteAnimator>().shakeOffset + letters[i].GetComponent<SpriteAnimator>().bobOffset + target, animSpeed * Time.deltaTime);
+        }
     }
 
     private GameObject CreateLetter()
@@ -48,41 +55,40 @@ public class TextBar : MonoBehaviour
 
     public void UpdateLetters()
     {
-        if (transform.childCount < text.Length)
-        {
-            //make new letters
-            for (int i = 0; i < text.Length - transform.childCount; i++)
-            {
-                letters.Add(CreateLetter());
-            }
-            for (int i = 0; i < letters.Count; i++)
-                letters[i].GetComponent<SpriteAnimator>().bobTimer = i * 0.1f;
-        }
-        else if (transform.childCount > text.Length)
-        {
-            //delete excess letters
-            for (int i = 0; i < transform.childCount - text.Length; i++)
-            {
-                letters.RemoveAt(letters.Count - 1);
-                Destroy(transform.GetChild(transform.childCount - 1).gameObject);
-            }
-            for (int i = 0; i < letters.Count; i++)
-                letters[i].GetComponent<SpriteAnimator>().bobTimer = i * 0.1f;
-        }
-        else
-        {
-            for (int i = 0; i < letters.Count; i++)
-            {
-                letters[i].GetComponent<SpriteAnimator>().shake = shake;
-                letters[i].GetComponent<SpriteAnimator>().bob = bob;
-                letters[i].GetComponent<SpriteAnimator>().bobIntensity = 0.25f;
-                letters[i].GetComponent<SpriteAnimator>().bobSpeed = 0.5f;
-                letters[i].transform.position = transform.position + (Vector3)GetLetterPosition(i) + letters[i].GetComponent<SpriteAnimator>().shakeOffset + letters[i].GetComponent<SpriteAnimator>().bobOffset;
-                letters[i].GetComponent<SpriteRenderer>().sprite = letterSprites[Board.GetIndex(text[i])];
-            }
-        }
+        letters.Clear();
+        for(int i = 0; i < transform.childCount; i++)
+            Destroy(transform.GetChild(i).gameObject);
+        for(int i = 0; i < text.Length; i++)
+            letters.Add(CreateLetter());
 
-
-        
+        for (int i = 0; i < letters.Count; i++)
+        {
+            letters[i].GetComponent<SpriteAnimator>().shake = shake;
+            letters[i].GetComponent<SpriteAnimator>().bob = bob;
+            letters[i].GetComponent<SpriteAnimator>().bobIntensity = 0.25f;
+            letters[i].GetComponent<SpriteAnimator>().bobSpeed = 0.5f;
+            letters[i].GetComponent<SpriteRenderer>().sprite = letterSprites[Board.GetIndex(text[i])];
+            letters[i].GetComponent<SpriteRenderer>().sortingOrder = sortingOrder;
+            letters[i].GetComponent<SpriteAnimator>().bobTimer = i * 0.1f; 
+            letters[i].transform.position = transform.position + (Vector3)GetLetterPosition(i) + letters[i].GetComponent<SpriteAnimator>().shakeOffset + letters[i].GetComponent<SpriteAnimator>().bobOffset;
+        }
     }
+
+    public void OffsetLetters(Vector3 offset, bool inOut)
+    {
+        if (inOut)
+            for (int i = 0; i < letters.Count; i++)
+                letters[i].transform.position += offset;
+        else
+            target = offset;
+    }
+
+    public void SetText(string text)
+    {
+        this.text = text;
+        UpdateLetters();
+    }
+
+    public string GetText() { return text; }
+
 }

@@ -39,6 +39,9 @@ public class SpriteAnimator : MonoBehaviour
     [SerializeField] public float bobTimer;
     public Vector3 bobOffset;
 
+    public bool color = false;
+    [SerializeField] private List<Color> colors;
+
     private void Update()
     {
         //Shake
@@ -95,26 +98,26 @@ public class SpriteAnimator : MonoBehaviour
         //Pulse
         if (pulse)
         {
-            if (pulseOffset.x > 0f)
-                pulseOffset -= new Vector3(pulseSpeed, pulseSpeed, 0f) * Time.deltaTime;
-            else
-                pulseOffset = Vector3.zero;
-
             pulseTimer -= Time.deltaTime;
             if (pulseTimer <= 0)
             {
                 Pulse();
                 pulseTimer = pulseInterval;
             }
-
-            transform.localScale = Vector3.one + pulseOffset;
         }
         else
         {
             pulseTimer = 0f;
+        }
+        if (pulseOffset.x > 0f)
+            pulseOffset -= new Vector3(pulseSpeed, pulseSpeed, 0f) * Time.deltaTime;
+        else
+        {
             pulseOffset = Vector3.zero;
             transform.localScale = Vector3.one;
         }
+
+        transform.localScale = Vector3.one + pulseOffset;
         //Rotate
         if (rotate)
         {
@@ -137,7 +140,7 @@ public class SpriteAnimator : MonoBehaviour
             {
                 bobTimer = 2f / bobSpeed;
             }
-            bobOffset = new Vector3(0f, bobIntensity * Mathf.Sin(1.5f * Mathf.Sin(Mathf.PI * bobSpeed * bobTimer)), 0f);
+            bobOffset = new Vector3(0f, bobIntensity * Mathf.Sin(Mathf.PI * bobSpeed * bobTimer), 0f);
         }
         else
         {
@@ -150,7 +153,7 @@ public class SpriteAnimator : MonoBehaviour
     {
         shakeOffset = new Vector3(Random.Range(-shakeIntensity, shakeIntensity), Random.Range(-shakeIntensity, shakeIntensity), 0f);
     }
-    private void Pulse()
+    public void Pulse()
     {
         pulseOffset = new Vector3(pulseIntensity, pulseIntensity, 0f);
     }

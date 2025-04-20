@@ -115,6 +115,11 @@ MonoBehaviour:
   rotate: 1
   rotateDirection: 1
   rotateSpeed: 15
+  bob: 0
+  bobIntensity: 0.5
+  bobSpeed: 1
+  bobTimer: 0
+  bobOffset: {x: 0, y: 0, z: 0}
 --- !u!1 &2985945651870660843
 GameObject:
   m_ObjectHideFlags: 0
@@ -198,6 +203,7 @@ MonoBehaviour:
   game: {fileID: 0}
   health: 500
   boardEnabled: 0
+  shakeBoard: 0
   playerNumber: 0
   tilePrefab: {fileID: -4333197153571588652, guid: 788ff6bfb0f70ba45a2104f6f2a6a9b9, type: 3}
   word: []

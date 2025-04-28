@@ -3,13 +3,31 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Unity.Mathematics;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.UI;
+
 
 public class Menu : MonoBehaviour
 {
+    private enum MenuState { Main, PlayerSelect, Game };
+
+    public static Menu instance;
+
     //Variables
+    private MenuState menuState;
     private List<string> titleText;
     private List<string> holidayText;
+    private Game game;
+    public List<PlayerInput> players;
+    //Movement variables
+    private int menuSelection;
+    private Vector2Int heldDirection;
+    private bool[] directions;
+    private float moveCooldown;
+    private float moveInterval = 0.15f;
 
     //Prefabs
     public Game gamePrefab;
@@ -19,21 +37,40 @@ public class Menu : MonoBehaviour
     private TileBar titleBarTop;
     private TileBar titleBarBottomLeft;
     private TileBar titleBarBottomRight;
-    private TextBar startText;
-    private TextBar quitText;
+    private Transform options;
+    private List<TextBar> optionsText;
+    private Transform playersTransform;
 
     private void Awake()
     {
+        if (instance == null)
+            instance = this;
+
+        menuState = MenuState.Main;
+        menuSelection = 0;
+        directions = new bool[4];
+
+        //Input Events
+        InputManager.GetMovementEvent += GetMovement;
+        InputManager.GetSelectEvent += Select;
+        InputManager.GetBackEvent += Back;
+        InputManager.GetEnterEvent += Enter;
+        InputManager.GetScrambleEvent += Scramble;
+
         //Get child objects
         titleBar = transform.GetChild(1).gameObject;
         titleBarTop = titleBar.transform.GetChild(0).GetComponent<TileBar>();
         titleBarBottomLeft = titleBar.transform.GetChild(1).GetComponent<TileBar>();
         titleBarBottomRight = titleBar.transform.GetChild(2).GetComponent<TileBar>();
-        startText = transform.GetChild(2).GetChild(0).GetComponent<TextBar>();
-        quitText = transform.GetChild(2).GetChild(1).GetComponent<TextBar>();
+        options = transform.GetChild(2);
+        optionsText = new List<TextBar>();
+        for (int i = 0; i < options.childCount; i++)
+            optionsText.Add(options.GetChild(i).GetComponent<TextBar>());
+        playersTransform = transform.GetChild(3);
 
-        startText.SetText("Start");
-        quitText.SetText("Quit");
+        optionsText[0].SetText("Start");
+        optionsText[1].SetText("Settings");
+        optionsText[2].SetText("Quit");
 
         titleText = File.ReadLines(@"Assets/title.txt").Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()).ToList();
 
@@ -67,6 +104,7 @@ public class Menu : MonoBehaviour
 
     private IEnumerator RunTitle()
     {
+        UpdateOptions();
         titleBarBottomLeft.SetText("WORD");
         titleBarBottomRight.SetText("GAME");
         titleBarTop.SetText("UNTITLED");
@@ -97,13 +135,232 @@ public class Menu : MonoBehaviour
         }
     }
 
+    private IEnumerator MoveToPlayerSelect()
+    {
+        menuState = MenuState.PlayerSelect;
+        
+        yield return new WaitForSeconds(1f);
+    }
+
+    private IEnumerator StartGame()
+    {
+        //break main menu animation
+        //hide all options except for selected one, and make it bob like crazy
+        for(int i = 0; i < optionsText.Count; i++)
+        {
+            if(menuSelection == i)
+            {
+
+                optionsText[i].bob = true;
+                optionsText[i].bobIntensity = 1f;
+                optionsText[i].bobSpeed = 2f;
+            }
+            else
+            {
+                optionsText[i].gameObject.SetActive(false);
+            }
+        }
+        //break all tiles
+        for (int i = 0; i < titleBarTop.tiles.Count; i++)
+            titleBarTop.DestroyTile(i);
+        for (int i = 0; i < titleBarBottomLeft.tiles.Count; i++)
+            titleBarBottomLeft.DestroyTile(i);
+        for (int i = 0; i < titleBarBottomRight.tiles.Count; i++)
+            titleBarBottomRight.DestroyTile(i);
+        titleBarTop.tiles.Clear();
+        titleBarBottomLeft.tiles.Clear();
+        titleBarBottomRight.tiles.Clear();
+        yield return new WaitForSeconds(1.5f);
+        //Reset
+        optionsText[menuSelection].bobIntensity = 0.25f;
+        optionsText[menuSelection].bobSpeed = 0.5f;
+        optionsText[menuSelection].bob = false;
+        optionsText[menuSelection].gameObject.SetActive(false);
+
+        game = Instantiate(gamePrefab, transform);
+        StartCoroutine(game.BeginGame(new int[] { 0, 1 }));
+        menuState = MenuState.Game;
+        yield return new WaitForSeconds(1f);
+    }
+
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.P))
+        //Main Menu
+        if(menuState.Equals(MenuState.Main))
         {
-            Instantiate(gamePrefab, transform);
-            titleBar.SetActive(false);
+            //Update movement
+            moveCooldown -= Time.deltaTime;
+            if (moveCooldown <= 0f)
+            {
+                moveCooldown = moveInterval;
+                MoveSelector(heldDirection);
+            }
         }
-        //Application.Quit();
+        else
+        {
+            titleBar.SetActive(false);
+            options.gameObject.SetActive(false);
+            menuSelection = 0;
+        }
+
+    }
+    private void UpdateOptions()
+    {
+        //Update selection
+        for (int i = 0; i < optionsText.Count; i++)
+        {
+            if (i == menuSelection)
+            {
+                optionsText[i].color = Color.white;
+                optionsText[i].bob = true;
+            }
+            else
+            {
+                optionsText[i].color = Color.black;
+                optionsText[i].bob = false;
+            }
+            optionsText[i].UpdateLetters();
+        }
+    }
+
+
+    //Input functions
+    public void JoinPlayer(PlayerInput player)
+    {
+        if(!players.Contains(player))
+        {
+            string device = "";
+            if (player.devices.Count > 0)
+                device = player.devices[0].name;
+            Debug.Log("Joining player " + player.playerIndex + " - " + device);
+            player.name = "Player " + player.playerIndex + " - " + device;
+            player.transform.SetParent(playersTransform);
+            players.Add(player);
+        }
+    }
+    public void LeavePlayer(PlayerInput player)
+    {
+        
+    }
+    private void GetMovement(int playernum, Vector2 v)
+    {
+        if (menuState.Equals(MenuState.Main))
+        {
+            bool[] newDirections = new bool[] { false, false, false, false };
+            if (v.y > 0)
+                newDirections[0] = true;
+            if (v.x > 0)
+                newDirections[1] = true;
+            if (v.y < 0)
+                newDirections[2] = true;
+            if (v.x < 0)
+                newDirections[3] = true;
+
+            if (newDirections[0] && !directions[0])
+                MoveSelector(Vector2Int.up);
+            if (newDirections[1] && !directions[1])
+                MoveSelector(Vector2Int.right);
+            if (newDirections[2] && !directions[2])
+                MoveSelector(Vector2Int.down);
+            if (newDirections[3] && !directions[3])
+                MoveSelector(Vector2Int.left);
+
+            directions = newDirections;
+            heldDirection = new Vector2Int(Mathf.RoundToInt(v.x), Mathf.RoundToInt(v.y));
+            moveCooldown = moveInterval;
+        }
+        else if (menuState.Equals(MenuState.Game))
+        {
+            //Gameplay
+            game.boards[game.PlayerIndexToNumber(playernum)].GetMovement(playernum, v);
+        }
+    }
+    private void MoveSelector(Vector2Int direction)
+    {
+        if(menuState.Equals(MenuState.Main))
+        {
+            //Main Menu
+            if(!direction.Equals(Vector2Int.zero) && direction.y != 0) 
+            {
+                menuSelection -= direction.y;
+                if (menuSelection < 0)
+                    menuSelection = optionsText.Count - 1;
+                if (menuSelection >= optionsText.Count)
+                    menuSelection = 0;
+                UpdateOptions();
+            }
+        }
+    }
+    private void Select(int playernum, bool b)
+    {
+        if(b)
+        {
+            if (menuState.Equals(MenuState.Main))
+            {
+                switch (menuSelection)
+                {
+                    case 0:
+                        StartCoroutine(StartGame());
+                        break;
+                    case 1:
+                        Debug.LogWarning("Settings");
+                        break;
+                    case 2:
+                        Debug.LogWarning("Closing game...");
+                        Application.Quit();
+                        break;
+                    default: break;
+                }
+                UpdateOptions();
+            }
+            else if (menuState.Equals(MenuState.Game))
+            {
+                //Gameplay
+                game.boards[game.PlayerIndexToNumber(playernum)].SelectTile(playernum, b);
+            }
+        }
+    }
+    private void Back(int playernum, bool b)
+    {
+        if (b)
+        {
+            if (menuState.Equals(MenuState.Main))
+            {
+                if (menuSelection == optionsText.Count - 1)
+                {
+                    Debug.LogWarning("Closing game...");
+                    Application.Quit();
+                }
+                menuSelection = optionsText.Count - 1;
+                UpdateOptions();
+            }
+            else if (menuState.Equals(MenuState.Game))
+            {
+                //Gameplay
+                game.boards[game.PlayerIndexToNumber(playernum)].DeselectTile(playernum, b);
+            }
+        }
+    }
+    private void Enter(int playernum, bool b)
+    {
+        if(b)
+        {
+            if (menuState.Equals(MenuState.Game))
+            {
+                //Gameplay
+                game.boards[game.PlayerIndexToNumber(playernum)].SubmitWord(playernum, b);
+            }
+        }
+    }
+    private void Scramble(int playernum, bool b)
+    {
+        if (b)
+        {
+            if (menuState.Equals(MenuState.Game))
+            {
+                //Gameplay
+                game.boards[game.PlayerIndexToNumber(playernum)].Scramble(playernum, b);
+            }
+        }
     }
 }

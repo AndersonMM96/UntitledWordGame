@@ -92,7 +92,7 @@ public class Tile : MonoBehaviour
 
             if (wordIndex == -1)
             {
-                transform.position = Vector3.MoveTowards(transform.position, board.gridTransform.position + (Vector3)(Vector2)gridIndex + spriteAnimator.shakeOffset, 30f * Time.deltaTime);
+                transform.position = Vector3.MoveTowards(transform.position, board.gridTransform.position + (Vector3)(Vector2)gridIndex + spriteAnimator.shakeOffset, 50f * Time.deltaTime);
                 if (board.word.Contains(this))
                     board.word.Remove(this);
                 if (gridIndex == board.selectorPosition)
@@ -109,7 +109,7 @@ public class Tile : MonoBehaviour
             }
             else
             {
-                transform.position = Vector3.MoveTowards(transform.position, (Vector3)board.GetTilePosition(wordIndex) + spriteAnimator.shakeOffset, 30f * Time.deltaTime);
+                transform.position = Vector3.MoveTowards(transform.position, (Vector3)board.GetTilePosition(wordIndex) + spriteAnimator.shakeOffset, 50f * Time.deltaTime);
                 if (!board.word.Contains(this))
                     board.word.Insert(wordIndex, this);
                 spriteAnimator.animate = true;

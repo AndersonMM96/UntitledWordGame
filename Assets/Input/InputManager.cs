@@ -10,9 +10,11 @@ public enum InputButtonState { ButtonUp, ButtonNotHeld, ButtonDown, ButtonHeld }
 
 public class InputManager : MonoBehaviour
 {
-    const int PLAYER_COUNT = 4; //Doesn't actually set the max number of players. For that, the PlayerInputManager component on the InputManager gameobject must be modified.
+    const int PLAYER_COUNT = 2; //Doesn't actually set the max number of players. For that, the PlayerInputManager component on the InputManager gameobject must be modified.
 
     private int playerIndex;
+    private PlayerInput playerInput;
+    private Menu menu;
 
     [SerializeField] private bool logInputs;
     [SerializeField] private int overridePlayerNumber = -1;
@@ -34,7 +36,7 @@ public class InputManager : MonoBehaviour
 
     private void Awake()
     {
-        
+        menu = Menu.instance;
     }
 
     private void OnEnable()
@@ -107,6 +109,9 @@ public class InputManager : MonoBehaviour
 
     public void UpdatePlayerIndex(PlayerInput player)
     {
+        playerInput = player;
+        if (playerInput != null)
+            menu.JoinPlayer(playerInput);
         if (overridePlayerNumber >= 0 && overridePlayerNumber < PLAYER_COUNT)
             playerIndex = overridePlayerNumber;
         else

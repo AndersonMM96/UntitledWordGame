@@ -20,7 +20,7 @@ public class Game : MonoBehaviour
     public bool enableTimer;
     private bool updateTimer;
     private float timer;
-    private Board[] boards;
+    public Board[] boards;
 
     //Prefabs
     public Board boardPrefab;
@@ -54,15 +54,15 @@ public class Game : MonoBehaviour
         wordTransform = transform.GetChild(4);
         boardTransforms = new Transform[] { wordTransform.GetChild(0), wordTransform.GetChild(1) };
 
-        StartCoroutine(BeginGame());
+        //StartCoroutine(BeginGame(new int[]{ 0, 1 }));
     }
 
-    private IEnumerator BeginGame()
+    public IEnumerator BeginGame(int[] players)
     {
         //Create and initialize boards
         boards = new Board[] { Instantiate(boardPrefab, boardTransforms[0]), Instantiate(boardPrefab, boardTransforms[1]) };
-        boards[0].InitializeBoard(0, Color.red, wordTransform.position);
-        boards[1].InitializeBoard(1, Color.blue, wordTransform.position);
+        boards[0].InitializeBoard(players[0], Color.red, wordTransform.position);
+        boards[1].InitializeBoard(players[1], Color.blue, wordTransform.position);
         boards[0].SetHealth(maxHP);
         boards[1].SetHealth(maxHP);
         boards[0].FillGrid(true);
@@ -228,6 +228,13 @@ public class Game : MonoBehaviour
     private int GetOther(int i)
     {
         return (i == 0 ? 1 : 0);
+    }
+    public int PlayerIndexToNumber(int index)
+    {
+        for (int i = 0; i < boards.Length; i++)
+            if (boards[i].playerNumber == index)
+                return i;
+        return -1;
     }
 
     //Animations

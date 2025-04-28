@@ -15,6 +15,9 @@ public class TextBar : MonoBehaviour
     [SerializeField] protected List<Sprite> letterSprites;
 
     public bool shake, bob = false;
+    public float bobIntensity = 0.25f;
+    public float bobSpeed = 0.5f;
+    public Color color = Color.white;
 
     private Vector3 target;
 
@@ -64,10 +67,11 @@ public class TextBar : MonoBehaviour
         {
             letters[i].GetComponent<SpriteAnimator>().shake = shake;
             letters[i].GetComponent<SpriteAnimator>().bob = bob;
-            letters[i].GetComponent<SpriteAnimator>().bobIntensity = 0.25f;
-            letters[i].GetComponent<SpriteAnimator>().bobSpeed = 0.5f;
+            letters[i].GetComponent<SpriteAnimator>().bobIntensity = bobIntensity;
+            letters[i].GetComponent<SpriteAnimator>().bobSpeed = bobSpeed;
             letters[i].GetComponent<SpriteRenderer>().sprite = letterSprites[Board.GetIndex(text[i])];
             letters[i].GetComponent<SpriteRenderer>().sortingOrder = sortingOrder;
+            letters[i].GetComponent<SpriteRenderer>().color = color;
             letters[i].GetComponent<SpriteAnimator>().bobTimer = i * 0.1f; 
             letters[i].transform.position = transform.position + (Vector3)GetLetterPosition(i) + letters[i].GetComponent<SpriteAnimator>().shakeOffset + letters[i].GetComponent<SpriteAnimator>().bobOffset;
         }

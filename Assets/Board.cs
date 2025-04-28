@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 public class Board : MonoBehaviour
 {
     //Variables
-    [SerializeField] private int playerNumber;
+    public int playerNumber;
     public int health;
     public bool boardEnabled = false;
     public bool movementEnabled;
@@ -35,11 +35,13 @@ public class Board : MonoBehaviour
 
     private void Start()
     {
+        /*
         InputManager.GetMovementEvent += GetMovement;
         InputManager.GetSelectEvent += SelectTile;
         InputManager.GetBackEvent += DeselectTile;
         InputManager.GetEnterEvent += SubmitWord;
         InputManager.GetScrambleEvent += Scramble;
+        */
     }
 
     private void Awake()
@@ -83,7 +85,7 @@ public class Board : MonoBehaviour
         }
     }
 
-    private void GetMovement(int playernum, Vector2 v)
+    public void GetMovement(int playernum, Vector2 v)
     {
         if (playerNumber == playernum && movementEnabled)
         {
@@ -124,7 +126,7 @@ public class Board : MonoBehaviour
         if (selectorPosition.y > 3)
             selectorPosition.y = 0;
     }
-    private void SelectTile(int playernum, bool b)
+    public void SelectTile(int playernum, bool b)
     {
         if (b && playerNumber == playernum && boardEnabled && movementEnabled)
         {
@@ -137,7 +139,7 @@ public class Board : MonoBehaviour
         }
 
     }
-    private void DeselectTile(int playernum, bool b)
+    public void DeselectTile(int playernum, bool b)
     {
         if (b && word.Count > 0 && playerNumber == playernum && boardEnabled && movementEnabled)
         {
@@ -152,7 +154,7 @@ public class Board : MonoBehaviour
         validWord = w.Length >= 3 && Dictionary.instance.ContainsWord(w);
         Game.instance.UpdateReaction(ScoreWord(w), validWord);
     }
-    private void SubmitWord(int playernum, bool b)
+    public void SubmitWord(int playernum, bool b)
     {
         if (b && playerNumber == playernum && boardEnabled && movementEnabled)
         {
@@ -186,7 +188,7 @@ public class Board : MonoBehaviour
             }
         }
     }
-    private void Scramble(int playernum, bool b)
+    public void Scramble(int playernum, bool b)
     {
         if (playernum == playerNumber && b && canScramble && boardEnabled && movementEnabled)
         {

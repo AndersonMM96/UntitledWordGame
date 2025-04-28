@@ -10,8 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6344576658792315382}
   - component: {fileID: 5063591011534514704}
-  - component: {fileID: 5864024443607065530}
-  - component: {fileID: 8514460850188379511}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -64,140 +62,6 @@ MonoBehaviour:
   TileGib: {fileID: 6076199780609258881, guid: a0c1bdb847e5a354b86567195003942c, type: 3}
   gridTransform: {fileID: 0}
   wordTransform: {fileID: 0}
---- !u!114 &5864024443607065530
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 845572641656448556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_Actions: {fileID: -944628639613478452, guid: c4260e0d055df6645952d9f1b4ebd779, type: 3}
-  m_NotificationBehavior: 2
-  m_UIInputModule: {fileID: 0}
-  m_DeviceLostEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_DeviceRegainedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ControlsChangedEvent:
-    m_PersistentCalls:
-      m_Calls: []
-  m_ActionEvents:
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8514460850188379511}
-        m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: MovementInput
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 5864024443607065530}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.InputSystem.PlayerInput,
-            Unity.InputSystem
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: d1da0337-2b91-454d-b6ca-d0117bd48f71
-    m_ActionName: gameplay/Movement[/Keyboard/w,/Keyboard/s,/Keyboard/a,/Keyboard/d]
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8514460850188379511}
-        m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: SelectInput
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 5864024443607065530}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.InputSystem.PlayerInput,
-            Unity.InputSystem
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: a759f101-b9c2-4df1-9e82-715889cf6ea8
-    m_ActionName: gameplay/Select[/Keyboard/space]
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8514460850188379511}
-        m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: BackInput
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 5864024443607065530}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.InputSystem.PlayerInput,
-            Unity.InputSystem
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 7881af78-2fd1-4931-bea0-1c623725d6cd
-    m_ActionName: gameplay/Back[/Keyboard/leftShift]
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8514460850188379511}
-        m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: EnterInput
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 5864024443607065530}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.InputSystem.PlayerInput,
-            Unity.InputSystem
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: 0e0e347c-6479-4801-922b-36c883750751
-    m_ActionName: gameplay/Enter[/Keyboard/enter]
-  - m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8514460850188379511}
-        m_TargetAssemblyTypeName: InputManager, Assembly-CSharp
-        m_MethodName: ScrambleInput
-        m_Mode: 2
-        m_Arguments:
-          m_ObjectArgument: {fileID: 5864024443607065530}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.InputSystem.PlayerInput,
-            Unity.InputSystem
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
-    m_ActionId: cf2aebe9-b19c-418a-877a-7392b029140d
-    m_ActionName: gameplay/Scramble[/Keyboard/q,/SwitchProControllerHID/buttonWest]
-  m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: 
-  m_DefaultActionMap: gameplay
-  m_SplitScreenIndex: -1
-  m_Camera: {fileID: 0}
---- !u!114 &8514460850188379511
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 845572641656448556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9588ce8a47753f545b74b814dd8009c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  logInputs: 0
-  overridePlayerNumber: -1
-  Movement: {x: 0, y: 0}
-  Select: 0
-  Back: 0
-  Enter: 0
-  Scramble: 0
 --- !u!1 &885054491803350142
 GameObject:
   m_ObjectHideFlags: 0
@@ -314,6 +178,7 @@ MonoBehaviour:
   - {fileID: 0}
   shake: 0
   bob: 0
+  color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &3731317607984011381
 GameObject:
   m_ObjectHideFlags: 0

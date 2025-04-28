@@ -25,7 +25,7 @@ public class SpriteAnimator : MonoBehaviour
     [SerializeField] public float pulseInterval = 1f;
     [SerializeField] public float pulseIntensity = 0.25f;
     [SerializeField] public float pulseSpeed = 0.5f;
-    [SerializeField] private float pulseTimer;
+    [SerializeField] public float pulseTimer;
     public Vector3 pulseOffset;
 
     public bool rotate = false;
@@ -159,4 +159,5 @@ public class SpriteAnimator : MonoBehaviour
     }
     public bool ToggleShake() { return shake = !shake; }
     public bool ToggleFlash() { return flash = !flash; }
+    public void SetSprite(int spriteIndex) { GetComponent<SpriteRenderer>().sprite = sprites[spriteIndex]; }
 }

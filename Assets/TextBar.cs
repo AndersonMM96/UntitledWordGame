@@ -20,7 +20,6 @@ public class TextBar : MonoBehaviour
 
     private void Awake()
     {
-        SetText("");
         letters = new List<GameObject>();
     }
 
@@ -47,7 +46,7 @@ public class TextBar : MonoBehaviour
         Vector2 position = Vector2.zero;
 
         int length = letters.Count;
-        position.x -= 0.2f * (length - 1);
+        position.x -= 0.25f * (length - 1);
         position.x += 0.5f * index;
 
         return position;

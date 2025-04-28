@@ -6,47 +6,35 @@ using UnityEngine.UIElements;
 
 public class Board : MonoBehaviour
 {
-    public Game game;
+    //Variables
+    [SerializeField] private int playerNumber;
     public int health;
     public bool boardEnabled = false;
     public bool movementEnabled;
     public bool shakeBoard = false;
-    [SerializeField] protected int playerNumber = 0;
-
-    public Tile tilePrefab;
-
+    public bool canScramble = true;
     public Tile[,] grid = new Tile[4, 4];
     public List<Tile> word = new List<Tile>();
     public bool validWord;
-
-    public Transform Selector;
+    //Movement variables
     public Vector2Int selectorPosition = new Vector2Int(0, 0);
     private Vector2Int heldDirection;
     private bool[] directions;
     private float moveCooldown;
     private float moveInterval = 0.15f;
 
-    public bool canScramble = true;
-
-    private Dictionary dictionary;
-    private TextBar HealthBar;
-
+    //Prefabs
+    public Tile tilePrefab;
     public ParticleSystem TileGib;
 
-    private void Awake()
-    {
-        HealthBar = transform.GetChild(3).GetComponent<TextBar>();
-        HealthBar.SetText(health.ToString("000"));
-        dictionary = GameObject.Find("Game").GetComponent<Dictionary>();
-        Selector = transform.GetChild(0);
-        selectorPosition = new Vector2Int(0, 3);
-        validWord = false;
-        directions = new bool[4];
-    }
+    //Child objects
+    private SpriteAnimator selector;
+    public Transform gridTransform;
+    public Transform wordTransform;
+    private TextBar HealthBar;
 
     private void Start()
     {
-        //Application.targetFrameRate = 10;
         InputManager.GetMovementEvent += GetMovement;
         InputManager.GetSelectEvent += SelectTile;
         InputManager.GetBackEvent += DeselectTile;
@@ -54,9 +42,39 @@ public class Board : MonoBehaviour
         InputManager.GetScrambleEvent += Scramble;
     }
 
+    private void Awake()
+    {
+        //Get child objects
+        selector = transform.GetChild(0).GetComponent<SpriteAnimator>();
+        gridTransform = transform.GetChild(1);
+        wordTransform = transform.GetChild(2);
+        HealthBar = transform.GetChild(3).GetComponent<TextBar>();
+    }
+
+    public void InitializeBoard(int playerNumber, Color selectorColor, Vector3 wordPosition)
+    {
+        this.playerNumber = playerNumber;
+
+        //Set some variables
+        HealthBar.SetText(health.ToString("000"));
+
+        directions = new bool[4];
+        selectorPosition = new Vector2Int(0, 3);
+        selector.transform.position = gridTransform.position + (Vector3)(Vector2)selectorPosition;
+
+        validWord = false;
+        wordTransform.position = wordPosition;
+
+        //Set selector variables based on player number
+        selector.GetComponent<SpriteRenderer>().color = selectorColor;
+        selector.pulseTimer = (selector.pulseInterval * 0.5f) * playerNumber;
+        selector.rotateDirection = playerNumber % 2 == 1 ? true : false;
+    }
+    public void InitializeBoard(int playerNumber, Color selectorColor) { InitializeBoard(playerNumber, selectorColor, wordTransform != null ? wordTransform.position : Vector3.up * 3f); }
+
     private void Update()
     {
-        Selector.position = transform.GetChild(1).position + (Vector3)(Vector2)selectorPosition;
+        selector.transform.position = gridTransform.position + (Vector3)(Vector2)selectorPosition;
         moveCooldown -= Time.deltaTime;
         if (moveCooldown <= 0f && movementEnabled)
         {
@@ -92,12 +110,6 @@ public class Board : MonoBehaviour
             heldDirection = new Vector2Int(Mathf.RoundToInt(v.x), Mathf.RoundToInt(v.y));
             moveCooldown = moveInterval;
         }
-    }
-    private float Sign(float i)
-    {
-        if (i == 0)
-            return 0;
-        return Mathf.Sign(i);
     }
     private void MoveSelector(Vector2Int direction)
     {
@@ -137,8 +149,8 @@ public class Board : MonoBehaviour
     private void CheckValidity()
     {
         string w = GetWord();
-        validWord = w.Length >= 3 && dictionary.ContainsWord(w);
-        game.UpdateReaction(ScoreWord(w), validWord);
+        validWord = w.Length >= 3 && Dictionary.instance.ContainsWord(w);
+        Game.instance.UpdateReaction(ScoreWord(w), validWord);
     }
     private void SubmitWord(int playernum, bool b)
     {
@@ -152,7 +164,7 @@ public class Board : MonoBehaviour
                 Debug.Log(w + " - " + points + " Points");
 
                 //Send word to game
-                StartCoroutine(game.SendScore());
+                StartCoroutine(Game.instance.SendScore());
             }
             else
                 Debug.LogWarning(GetWord() + " - Not a valid word!");
@@ -249,7 +261,7 @@ public class Board : MonoBehaviour
         while (LetterCount(letter[0]) >= 4)
             letter = GetRandomLetter();
 
-        Tile tile = Instantiate(tilePrefab, transform.position + (Vector3)(Vector2)position + Vector3.up * 10f, Quaternion.identity, transform);
+        Tile tile = Instantiate(tilePrefab, gridTransform.position + (Vector3)(Vector2)position + Vector3.up * 10f, Quaternion.identity, transform);
         tile.SetValue(letter);
         tile.gridIndex = position;
         tile.board = this;
@@ -533,9 +545,9 @@ public class Board : MonoBehaviour
             default: return 0;
         }
     }
-    public Vector2 GetLetterPosition(int index)
+    public Vector2 GetTilePosition(int index)
     {
-        Vector2 wordPosition = (Vector2)transform.GetChild(2).position;
+        Vector2 wordPosition = wordTransform.position;
 
         int length = word.Count;
         wordPosition.x -= 0.5f * (length + 1);

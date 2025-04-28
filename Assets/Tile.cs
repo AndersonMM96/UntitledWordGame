@@ -8,6 +8,7 @@ public class Tile : MonoBehaviour
     private string value;
     public Vector2Int gridIndex;
     public int wordIndex = -1;
+    public bool shakeTile = false;
 
     public Board board;
 
@@ -51,7 +52,7 @@ public class Tile : MonoBehaviour
 
         if(board != null)
         {
-            if(board.shakeBoard)
+            if(board.shakeBoard || shakeTile)
             {
                 GetComponent<SpriteRenderer>().color = Color.gray;
                 pip.color = Color.gray;
@@ -91,7 +92,7 @@ public class Tile : MonoBehaviour
 
             if (wordIndex == -1)
             {
-                transform.position = Vector3.MoveTowards(transform.position, board.transform.position + (Vector3)(Vector2)gridIndex + spriteAnimator.shakeOffset, 30f * Time.deltaTime);
+                transform.position = Vector3.MoveTowards(transform.position, board.gridTransform.position + (Vector3)(Vector2)gridIndex + spriteAnimator.shakeOffset, 30f * Time.deltaTime);
                 if (board.word.Contains(this))
                     board.word.Remove(this);
                 if (gridIndex == board.selectorPosition)
@@ -108,7 +109,7 @@ public class Tile : MonoBehaviour
             }
             else
             {
-                transform.position = Vector3.MoveTowards(transform.position, (Vector3)board.GetLetterPosition(wordIndex) + spriteAnimator.shakeOffset, 30f * Time.deltaTime);
+                transform.position = Vector3.MoveTowards(transform.position, (Vector3)board.GetTilePosition(wordIndex) + spriteAnimator.shakeOffset, 30f * Time.deltaTime);
                 if (!board.word.Contains(this))
                     board.word.Insert(wordIndex, this);
                 spriteAnimator.animate = true;
@@ -117,6 +118,13 @@ public class Tile : MonoBehaviour
                 for (int i = 1; i < transform.childCount; i++)
                     transform.GetChild(i).GetComponent<SpriteRenderer>().sortingOrder = 5;
             }
+        }
+
+        if (shakeTile)
+        {
+            GetComponent<SpriteRenderer>().color = Color.gray;
+            pip.color = Color.gray;
+            GetComponent<SpriteAnimator>().shake = true;
         }
     }
     public void SetValue(string value)

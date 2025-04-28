@@ -3,16 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.LowLevel;
-using UnityEngine.UI;
+using UnityEngine.Windows;
 
 
 public class Menu : MonoBehaviour
 {
-    private enum MenuState { Main, PlayerSelect, Game };
+    private enum MenuState { Main, PlayerSelect, Game, Quit };
 
     public static Menu instance;
 
@@ -46,7 +44,6 @@ public class Menu : MonoBehaviour
         if (instance == null)
             instance = this;
 
-        menuState = MenuState.Main;
         menuSelection = 0;
         directions = new bool[4];
 
@@ -72,7 +69,7 @@ public class Menu : MonoBehaviour
         optionsText[1].SetText("Settings");
         optionsText[2].SetText("Quit");
 
-        titleText = File.ReadLines(@"Assets/title.txt").Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()).ToList();
+        titleText = System.IO.File.ReadLines(@"Assets/title.txt").Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()).ToList();
 
         //Holiday Words
         DateTime thanksgivingDay = new DateTime(DateTime.Today.Year, 11, 1);
@@ -104,6 +101,7 @@ public class Menu : MonoBehaviour
 
     private IEnumerator RunTitle()
     {
+        menuState = MenuState.Main;
         UpdateOptions();
         titleBarBottomLeft.SetText("WORD");
         titleBarBottomRight.SetText("GAME");
@@ -135,25 +133,21 @@ public class Menu : MonoBehaviour
         }
     }
 
-    private IEnumerator MoveToPlayerSelect()
-    {
-        menuState = MenuState.PlayerSelect;
-        
-        yield return new WaitForSeconds(1f);
-    }
-
-    private IEnumerator StartGame()
+    private IEnumerator LeaveTitle()
     {
         //break main menu animation
         //hide all options except for selected one, and make it bob like crazy
-        for(int i = 0; i < optionsText.Count; i++)
+        Vector3 oldPosition = Vector3.zero;
+        for (int i = 0; i < optionsText.Count; i++)
         {
-            if(menuSelection == i)
+            if (menuSelection == i)
             {
 
                 optionsText[i].bob = true;
-                optionsText[i].bobIntensity = 1f;
+                optionsText[i].bobIntensity = 0.5f;
                 optionsText[i].bobSpeed = 2f;
+                oldPosition = optionsText[i].transform.position;
+                optionsText[i].OffsetLetters(transform.position - oldPosition, false);
             }
             else
             {
@@ -176,11 +170,30 @@ public class Menu : MonoBehaviour
         optionsText[menuSelection].bobSpeed = 0.5f;
         optionsText[menuSelection].bob = false;
         optionsText[menuSelection].gameObject.SetActive(false);
+        optionsText[menuSelection].OffsetLetters(oldPosition, false);
+    }
 
+    private IEnumerator MoveToPlayerSelect()
+    {
+        menuState = MenuState.PlayerSelect;
+        
+        yield return new WaitForSeconds(1f);
+    }
+
+    private IEnumerator StartGame()
+    {
+        yield return StartCoroutine(LeaveTitle());
         game = Instantiate(gamePrefab, transform);
         StartCoroutine(game.BeginGame(new int[] { 0, 1 }));
         menuState = MenuState.Game;
         yield return new WaitForSeconds(1f);
+    }
+    private IEnumerator QuitGame()
+    {
+        yield return StartCoroutine(LeaveTitle());
+        menuState = MenuState.Quit;
+        Debug.LogWarning("Closing game...");
+        Application.Quit();
     }
 
     private void Update()
@@ -306,8 +319,7 @@ public class Menu : MonoBehaviour
                         Debug.LogWarning("Settings");
                         break;
                     case 2:
-                        Debug.LogWarning("Closing game...");
-                        Application.Quit();
+                        StartCoroutine(QuitGame());
                         break;
                     default: break;
                 }
@@ -328,8 +340,7 @@ public class Menu : MonoBehaviour
             {
                 if (menuSelection == optionsText.Count - 1)
                 {
-                    Debug.LogWarning("Closing game...");
-                    Application.Quit();
+                    StartCoroutine(QuitGame());
                 }
                 menuSelection = optionsText.Count - 1;
                 UpdateOptions();

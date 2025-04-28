@@ -19,7 +19,7 @@ public class TextBar : MonoBehaviour
     public float bobSpeed = 0.5f;
     public Color color = Color.white;
 
-    private Vector3 target;
+    [SerializeField] private Vector3 target;
 
     private void Awake()
     {

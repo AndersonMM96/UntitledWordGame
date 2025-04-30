@@ -158,6 +158,7 @@ public class Board : MonoBehaviour
     {
         if (b && playerNumber == playernum && boardEnabled && movementEnabled)
         {
+            CheckValidity();
             if (validWord)
             {
                 //code for displaying word scores in console--otherwise these 3 lines can be removed

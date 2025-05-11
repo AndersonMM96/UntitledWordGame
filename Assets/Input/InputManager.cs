@@ -1,120 +1,155 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Events;
-using System;
-using UnityEngine.Windows;
-
-public enum InputButtonState { ButtonUp, ButtonNotHeld, ButtonDown, ButtonHeld };   //Currently, only ButtonDown and ButtonUp are used.
+using UnityEngine.InputSystem.LowLevel;
+using static UnityEditor.Experimental.GraphView.GraphView;
 
 public class InputManager : MonoBehaviour
 {
-    const int PLAYER_COUNT = 2; //Doesn't actually set the max number of players. For that, the PlayerInputManager component on the InputManager gameobject must be modified.
+    public static InputManager instance;
 
-    private int playerIndex;
-    private PlayerInput playerInput;
-    private Menu menu;
+    //Variables
+    public bool logInputs = false;
+    public List<bool> inputEnabled;
+    public List<PlayerInput> players;
+    private List<Vector2Int> heldDirection;
+    private List<bool[]> directions;
+    private List<float> moveCooldown;
+    private static float moveInterval = 0.15f;
 
-    [SerializeField] private bool logInputs;
-    [SerializeField] private int overridePlayerNumber = -1;
-    private Vector2 lastMovement;
-
-    //[SerializeField] public Vector2 Movement;
-    [SerializeField] public Vector2 Movement;
-    [SerializeField] public InputButtonState Select;
-    [SerializeField] public InputButtonState Back;
-    [SerializeField] public InputButtonState Enter;
-    [SerializeField] public InputButtonState Scramble;
-
-    [HideInInspector] public static Action<int, Vector2> GetMovementEvent;
-    [HideInInspector] public static Action<int, bool> GetSelectEvent;
-    [HideInInspector] public static Action<int, bool> GetBackEvent;
-    [HideInInspector] public static Action<int, bool> GetEnterEvent;
-    [HideInInspector] public static Action<int, bool> GetScrambleEvent;
-
+    //Events
+    [HideInInspector] public static Action<int, Vector2Int> Move;
+    [HideInInspector] public static Action<int> Select;
+    [HideInInspector] public static Action<int> Back;
+    [HideInInspector] public static Action<int> Enter;
+    [HideInInspector] public static Action<int> Scramble;
 
     private void Awake()
     {
-        menu = Menu.instance;
-    }
+        if (instance == null)
+            instance = this;
 
-    private void OnEnable()
-    {
+        PlayerInputManager.GetMovementEvent += GetMovement;
+        PlayerInputManager.GetSelectEvent += GetSelect;
+        PlayerInputManager.GetBackEvent += GetBack;
+        PlayerInputManager.GetEnterEvent += GetEnter;
+        PlayerInputManager.GetScrambleEvent += GetScramble; 
         
+        inputEnabled = new List<bool>();
+        players = new List<PlayerInput>();
+        heldDirection = new List<Vector2Int>();
+        directions = new List<bool[]>();
+        moveCooldown = new List<float>();
     }
-    private void OnDisable()
+    
+    public void JoinPlayer(PlayerInput player)
     {
-
-    }
-
-    //Player Input Functions
-    public void SelectInput(PlayerInput player)
-    {
-        UpdatePlayerIndex(player);
-        Select = UpdateButtonState(Select, GetSelectEvent, player.actions.FindAction("Select"));
-    }
-    public void BackInput(PlayerInput player)
-    {
-        UpdatePlayerIndex(player);
-        Back = UpdateButtonState(Back, GetBackEvent, player.actions.FindAction("Back"));
-    }
-    public void EnterInput(PlayerInput player)
-    {
-        UpdatePlayerIndex(player);
-        Enter = UpdateButtonState(Enter, GetEnterEvent, player.actions.FindAction("Enter"));
-    }
-    public void ScrambleInput(PlayerInput player)
-    {
-        UpdatePlayerIndex(player);
-        Scramble = UpdateButtonState(Scramble, GetScrambleEvent, player.actions.FindAction("Scramble"));
-    }
-    public void MovementInput(PlayerInput player)
-    {
-        UpdatePlayerIndex(player);
-        Movement = player.actions.FindAction("Movement").ReadValue<Vector2>();
-        if (Movement != lastMovement)
+        if (!players.Contains(player))
         {
-            lastMovement = Movement;
+            string device = "";
+            if (player.devices.Count > 0)
+                device = player.devices[0].name;
+            Debug.Log("Joining player " + player.playerIndex + " - " + device);
+            player.name = "Player " + player.playerIndex + " - " + device;
+            player.transform.SetParent(transform);
+            players.Add(player);
+            inputEnabled.Add(true);
+            heldDirection.Add(Vector2Int.zero);
+            directions.Add(new bool[4]);
+            moveCooldown.Add(moveInterval);
+        }
+    }
+    public void LeavePlayer(PlayerInput player)
+    {
+
+    }
+
+    private void Update()
+    {
+        for(int i = 0; i < players.Count; i++)
+        {
+            if (!heldDirection[i].Equals(Vector2Int.zero))
+            {
+                moveCooldown[i] -= Time.deltaTime;
+                if (moveCooldown[i] <= 0f && inputEnabled[i])
+                {
+                    moveCooldown[i] = moveInterval;
+                    MoveSelector(i, heldDirection[i]);
+                }
+            }
+            else
+                moveCooldown[i] = moveInterval;
+        }
+    }
+
+    private void GetMovement(int playernum, Vector2 v)
+    {
+        bool[] newDirections = new bool[] { false, false, false, false };
+        if (v.y > 0)
+            newDirections[0] = true;
+        if (v.x > 0)
+            newDirections[1] = true;
+        if (v.y < 0)
+            newDirections[2] = true;
+        if (v.x < 0)
+            newDirections[3] = true;
+
+        if (newDirections[0] && !directions[playernum][0])
+            MoveSelector(playernum, Vector2Int.up);
+        if (newDirections[1] && !directions[playernum][1])
+            MoveSelector(playernum, Vector2Int.right);
+        if (newDirections[2] && !directions[playernum][2])
+            MoveSelector(playernum, Vector2Int.down);
+        if (newDirections[3] && !directions[playernum][3])
+            MoveSelector(playernum, Vector2Int.left);
+
+        directions[playernum] = newDirections;
+        heldDirection[playernum] = new Vector2Int(Mathf.RoundToInt(v.x), Mathf.RoundToInt(v.y));
+        moveCooldown[playernum] = moveInterval;
+    }
+    private void MoveSelector(int playernum, Vector2Int direction)
+    {
+        if(logInputs)
+            Debug.Log(players[playernum].name + " - " + direction);
+        Move?.Invoke(playernum, direction);
+    }
+    private void GetSelect(int playernum, bool b)
+    {
+        if (b)
+        {
             if (logInputs)
-                Debug.Log("Player " + (playerIndex + 1) + " " + Movement.ToString());
-            GetMovementEvent?.Invoke(playerIndex, Movement);
+                Debug.Log(players[playernum].name + " - Select");
+            Select?.Invoke(playernum);
         }
     }
-
-    private InputButtonState UpdateButtonState(InputButtonState buttonState, Action<int, bool> buttonEvent, InputAction input)
+    private void GetBack(int playernum, bool b)
     {
-        if (Mathf.Approximately(input.ReadValue<float>(), 1f))
+        if (b)
         {
-            if (!buttonState.Equals(InputButtonState.ButtonDown))
-            {
-                buttonState = InputButtonState.ButtonDown;
-                buttonEvent?.Invoke(playerIndex, true);
-                if (logInputs)
-                    Debug.Log("Player " + (playerIndex + 1) + " " + input.name + " " + buttonState.ToString());
-            }
+            if (logInputs)
+                Debug.Log(players[playernum].name + " - Back");
+            Back?.Invoke(playernum);
         }
-        else
-        {
-            if(!buttonState.Equals(InputButtonState.ButtonUp))
-            {
-                buttonState = InputButtonState.ButtonUp;
-                buttonEvent?.Invoke(playerIndex, false);
-                if (logInputs)
-                    Debug.Log("Player " + (playerIndex + 1) + " " + input.name + " " + buttonState.ToString());
-            }
-        }
-        return buttonState;
     }
-
-    public void UpdatePlayerIndex(PlayerInput player)
+    private void GetEnter(int playernum, bool b)
     {
-        playerInput = player;
-        if (playerInput != null)
-            menu.JoinPlayer(playerInput);
-        if (overridePlayerNumber >= 0 && overridePlayerNumber < PLAYER_COUNT)
-            playerIndex = overridePlayerNumber;
-        else
-            playerIndex = player.playerIndex;
+        if (b)
+        {
+            if (logInputs)
+                Debug.Log(players[playernum].name + " - Enter");
+            Enter?.Invoke(playernum);
+        }
+    }
+    private void GetScramble(int playernum, bool b)
+    {
+        if (b)
+        {
+            if(logInputs)
+                Debug.Log(players[playernum].name + " - Scramble");
+            Scramble?.Invoke(playernum);
+        }
     }
 }

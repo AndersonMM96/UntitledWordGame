@@ -2,21 +2,27 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Xml.Linq;
 using UnityEngine;
 
 
 public class Menu : MonoBehaviour
 {
-    private enum MenuState { Main, PlayerSelect, Game, Quit };
+    private enum MenuState { Main, PlayerSelect, GameSettings, Game, Quit };
 
     public static Menu instance;
 
     //Variables
     private bool enableInput;
     private MenuState menuState;
-    [SerializeField] private int menuSelection = 0;
+    private int menuSelection = 0;
     private List<string> titleText;
     private List<string> holidayText;
+    [SerializeField] private int[] players;
+    private int healthIndex = 4;
+    private int timeIndex = 1;
+    private static readonly int[] maxHealth = new int[] { 100, 250, 500, 750, 999 };
+    private static readonly int[] timeLimit = new int[] { 0, 15, 20, 25, 30, 45, 60 };
     private Game game;
 
     //Child objects
@@ -24,6 +30,13 @@ public class Menu : MonoBehaviour
     private TilePile[] titleTiles;
     private Transform titleOptionsTransform;
     private TextPile[] titleOptions;
+
+    private Transform playerSelectionTransform;
+    private TextPile[] playerSelection;
+
+    private Transform gameOptionsTransform;
+    private TextPile[] gameOptionsLabels;
+    private TextPile[] gameOptions;
 
     private void Awake()
     {
@@ -39,7 +52,10 @@ public class Menu : MonoBehaviour
 
     private void Start()
     {
+        Debug.Log("Game loading!");
+
         game = null;
+        players = new int[]{ -1, -1 };
 
         //Main Menu TilePiles
         titleTilesTransform = new GameObject().transform;
@@ -75,8 +91,59 @@ public class Menu : MonoBehaviour
         titleOptions[1].name = "Options";
         titleOptions[2].name = "Quit";
 
+        //Player Selection Screen
+        playerSelectionTransform = new GameObject().transform;
+        playerSelectionTransform.parent = transform;
+        playerSelectionTransform.localPosition = Vector3.zero;
+        playerSelectionTransform.name = "Player Selection";
+        playerSelection = new TextPile[5];
+        for (int i = 0; i < playerSelection.Length - 1; i++)
+        {
+            playerSelection[i] = TextPile.Create(playerSelectionTransform);
+            playerSelection[i].transform.localPosition = new Vector2(-4f + (i > 1 ? 8 : 0), 1 + (-2 * (i % 2)));
+            playerSelection[i].AddColor(Color.white);
+            playerSelection[i].AddColor(Color.black);
+            playerSelection[i].SetColor(1);
+            playerSelection[i].name = "Player " + (i < 2 ? 1 : 2) + " " + (i % 2 == 0 ? "PlayerName" : "DeviceName");
+        }
+        playerSelection[4] = TextPile.Create(playerSelectionTransform);
+        playerSelection[4].transform.localPosition = Vector2.zero;
+        playerSelection[4].AddColor(Color.white);
+        playerSelection[4].AddColor(Color.black);
+        playerSelection[4].AddColor(Color.red);
+        playerSelection[4].SetColor(1);
+        playerSelection[4].name = "ConfirmPlayers";
+
+        //Game Options Screen
+        gameOptionsTransform = new GameObject().transform;
+        gameOptionsTransform.parent = transform;
+        gameOptionsTransform.localPosition = Vector3.zero;
+        gameOptionsTransform.name = "Game Options"; 
+        gameOptionsLabels = new TextPile[2];
+        for (int i = 0; i < gameOptionsLabels.Length; i++)
+        {
+            gameOptionsLabels[i] = TextPile.Create(playerSelectionTransform);
+            gameOptionsLabels[i].transform.localPosition = new Vector2(0f, 3f - 3f * i);
+            gameOptionsLabels[i].AddColor(Color.black);
+        }
+        gameOptionsLabels[0].name = "Health Label";
+        gameOptionsLabels[1].name = "Time Label";
+        gameOptions = new TextPile[3];
+        for (int i = 0; i < gameOptions.Length; i++)
+        {
+            gameOptions[i] = TextPile.Create(playerSelectionTransform);
+            gameOptions[i].transform.localPosition = new Vector2(0f, 2f - 3f * i);
+            gameOptions[i].AddColor(Color.white);
+            gameOptions[i].AddColor(Color.black);
+            gameOptions[i].SetColor(1);
+        }
+        gameOptions[0].name = "Max Health";
+        gameOptions[1].name = "Time Limit";
+        gameOptions[2].name = "Confirm";
+        gameOptions[2].transform.localPosition += Vector3.up;
+
         //Main Menu Text
-        titleText = System.IO.File.ReadLines(@"Assets/Resources/Text/title.txt").Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()).ToList();
+        titleText = System.IO.File.ReadLines(Application.streamingAssetsPath + "/Text/title.txt").Where(line => !string.IsNullOrWhiteSpace(line)).Select(line => line.Trim()).ToList();
 
         //Holiday Words
         DateTime thanksgivingDay = new DateTime(DateTime.Today.Year, 11, 1);
@@ -167,6 +234,56 @@ public class Menu : MonoBehaviour
         Application.Quit();
     }
 
+    private IEnumerator PlayerSelect()
+    {
+        playerSelection[0].SetText("Player 1");
+        playerSelection[2].SetText("Player 2");
+        for(int i = 0; i < 2; i++)
+        {
+            int p = 1 + (i * 2);
+            int c = players[i];
+            if (InputManager.instance.players.Count > c && c != -1)
+                playerSelection[p].SetText(InputManager.instance.players[c].devices[0].name);
+            else
+                playerSelection[p].SetText("NULL");
+        }
+        playerSelection[4].SetText("Confirm");
+
+        if (InputManager.instance.players.Count > 0)
+        {
+            if(players[0] == -1)
+                players[0] = 0;
+        }
+        else
+            players[0] = -1;
+        if (InputManager.instance.players.Count > 1)
+        {
+            if (players[1] == -1)
+                players[1] = 1;
+        }
+        else
+            players[1] = -1;
+
+        menuSelection = 4;
+        UpdatePlayerSelection();
+
+        yield return null;
+    }
+    private IEnumerator GameSettings()
+    {
+        gameOptionsLabels[0].SetText("Health");
+        gameOptionsLabels[1].SetText("Time");
+
+        gameOptions[0].SetText(maxHealth[healthIndex].ToString());
+        gameOptions[1].SetText(timeLimit[timeIndex].ToString());
+        gameOptions[2].SetText("Confirm");
+
+        menuSelection = 2;
+        UpdateGameOptions();
+
+        yield return null;
+    }
+
     private IEnumerator StartGame()
     {
         game = new GameObject().AddComponent<Game>();
@@ -175,14 +292,19 @@ public class Menu : MonoBehaviour
         game.name = "Game";
 
         //Set gamerules here
-        //game.maxHealth = 50;
-        //game.timeLimit = 20;
-        if (game.timeLimit > 0)
+        game.maxHealth = maxHealth[healthIndex];
+        if (timeLimit[timeIndex] > 0)
+        {
             game.timerEnabled = true;
+            game.timeLimit = timeLimit[timeIndex];
+        }
         else
+        {
             game.timerEnabled = false;
+            game.timeLimit = 1;
+        }
 
-        game.Initialize(new int[] { 0, 1 });
+        game.Initialize(players);
         yield return new WaitForSeconds(1f);
         game.StartGame();
     }
@@ -192,34 +314,49 @@ public class Menu : MonoBehaviour
         enableInput = false;
 
         //Leaving Menu Code
-        if(menuState.Equals(MenuState.Main))
+        switch (menuState)
         {
-            //Destroy tiles
-            foreach (TilePile pile in titleTiles)
-                pile.DestroyTile();
+            case MenuState.Main:
+                //Destroy tiles
+                foreach (TilePile pile in titleTiles)
+                    pile.DestroyTile();
 
-            //Hide unselected options
-            for (int i = 0; i < titleOptions.Length; i++)
-            {
-                if (menuSelection == i)
+                //Hide unselected options
+                for (int i = 0; i < titleOptions.Length; i++)
                 {
-                    titleOptions[i].SetBob(true);
+                    if (menuSelection == i)
+                    {
+                        titleOptions[i].SetBob(true);
+                    }
+                    else
+                    {
+                        titleOptions[i].SetText("");
+                    }
                 }
-                else
-                {
-                    titleOptions[i].SetText("");
-                }
-            }
-            yield return new WaitForSeconds(1f);
-            titleOptions[menuSelection].SetText("");
-            titleOptions[menuSelection].SetBob(false);
+                yield return new WaitForSeconds(1f);
+                titleOptions[menuSelection].SetText("");
+                titleOptions[menuSelection].SetBob(false);
+                break;
+            case MenuState.PlayerSelect:
+                for (int i = 0; i < playerSelection.Length; i++)
+                    playerSelection[i].SetText("");
+                break;
+            case MenuState.GameSettings:
+                for (int i = 0; i < gameOptionsLabels.Length; i++)
+                    gameOptionsLabels[i].SetText("");
+                for (int i = 0; i < gameOptions.Length; i++)
+                    gameOptions[i].SetText("");
+                break;
+            case MenuState.Game:
+                yield return StartCoroutine(game.EndGame());
+                break;
+            case MenuState.Quit:
+                break;
+            default:
+                break;
         }
-        else if (menuState.Equals(MenuState.Game))
-        {
-            yield return StartCoroutine(game.EndGame());
-        }
-
-            menuState = next;
+        
+        menuState = next;
 
         //Load next menu
         switch (menuState)
@@ -228,6 +365,10 @@ public class Menu : MonoBehaviour
                 StartCoroutine(TitleScreen());
                 break;
             case MenuState.PlayerSelect:
+                StartCoroutine(PlayerSelect());
+                break;
+            case MenuState.GameSettings:
+                StartCoroutine(GameSettings());
                 break;
             case MenuState.Game:
                 StartCoroutine(StartGame());
@@ -257,25 +398,181 @@ public class Menu : MonoBehaviour
                     titleOptions[i].SetColor(1);
                 }
             }
+
+        }
+    }
+    private void UpdatePlayerSelection()
+    {
+        if (menuState.Equals(MenuState.PlayerSelect))
+        {
+            for (int i = 0; i < playerSelection.Length; i++)
+            {
+                if (menuSelection == i)
+                {
+                    if (menuSelection == 4 && (players[0] == players[1] || players[0] == -1 || players[1] == -1))
+                        playerSelection[i].SetColor(2);
+                    else
+                        playerSelection[i].SetColor(0);
+                }
+                else
+                {
+                    playerSelection[i].SetColor(1);
+                }
+
+                int p = i == 1 ? 0 : i == 3 ? 1 : -1;
+                if (p != -1)
+                {
+                    if (InputManager.instance.players.Count > players[p] && players[p] >= 0)
+                        playerSelection[i].SetText(InputManager.instance.players[players[p]].devices[0].name);
+                    else
+                        playerSelection[i].SetText("NULL");
+                }
+            }
+        }
+    }
+    private void UpdateGameOptions()
+    {
+        if (menuState.Equals(MenuState.GameSettings))
+        {
+            for (int i = 0; i < gameOptions.Length; i++)
+            {
+                if (menuSelection == i)
+                {
+                    gameOptions[i].SetColor(0);
+                }
+                else
+                {
+                    gameOptions[i].SetColor(1);
+                }
+
+                if (i == 0)
+                    gameOptions[i].SetText(maxHealth[healthIndex].ToString());
+                else if (i == 1)
+                {
+                    if (timeLimit[timeIndex] == 0)
+                        gameOptions[i].SetText("OFF");
+                    else
+                        gameOptions[i].SetText(timeLimit[timeIndex].ToString());
+                }
+            }
         }
     }
     private void MoveSelector(int playernum, Vector2Int direction)
     {
         if(enableInput)
         {
-            if (menuState.Equals(MenuState.Main))
+            switch (menuState)
             {
-                if (direction.y > 0f)
-                    menuSelection--;
-                else if (direction.y < 0f)
-                    menuSelection++;
-
-                if (menuSelection < 0)
-                    menuSelection = titleOptions.Length - 1;
-                if (menuSelection >= titleOptions.Length)
-                    menuSelection = 0;
-
-                UpdateMenuSelection();
+                case MenuState.Main:
+                    if (direction.y > 0f)
+                        menuSelection--;
+                    else if (direction.y < 0f)
+                        menuSelection++;
+                    if (menuSelection < 0)
+                        menuSelection = titleOptions.Length - 1;
+                    if (menuSelection >= titleOptions.Length)
+                        menuSelection = 0;
+                    UpdateMenuSelection();
+                    break;
+                case MenuState.PlayerSelect:
+                    int p = menuSelection == 1 ? 0 : menuSelection == 3 ? 1 : -1;
+                    if (direction.y > 0f && p != -1)
+                    {
+                        players[p]++;
+                        if (players[p] >= InputManager.instance.players.Count)
+                            players[p] = -1;
+                    }
+                    else if (direction.y < 0f && p != -1)
+                    {
+                        players[p]--;
+                        if (players[p] < -1)
+                            players[p] = InputManager.instance.players.Count - 1;
+                    }
+                    if (direction.x > 0f)
+                        switch (menuSelection)
+                        {
+                            case 1:
+                                menuSelection -= 2;
+                                break;
+                            case 3:
+                                menuSelection -= 2;
+                                break;
+                            case 4:
+                                menuSelection--;
+                                break;
+                            default:
+                                break;
+                        }
+                    else if (direction.x < 0f)
+                        switch (menuSelection)
+                        {
+                            case 1:
+                                menuSelection += 2;
+                                break;
+                            case 3:
+                                menuSelection++;
+                                break;
+                            case 4:
+                                menuSelection++;
+                                break;
+                            default:
+                                break;
+                        }
+                    if (menuSelection < 0)
+                        menuSelection = playerSelection.Length - 1;
+                    if (menuSelection >= playerSelection.Length)
+                        menuSelection = 1;
+                    UpdatePlayerSelection();
+                    break;
+                case MenuState.GameSettings:
+                    if(direction.x > 0f)
+                        switch (menuSelection)
+                        {
+                            case 0:
+                                healthIndex++;
+                                if(healthIndex >= maxHealth.Length) 
+                                    healthIndex = 0;
+                                break;
+                            case 1:
+                                timeIndex++;
+                                if (timeIndex >= timeLimit.Length)
+                                    timeIndex = 0;
+                                break;
+                            default:
+                                break;
+                        }
+                    else if (direction.x < 0f)
+                        switch (menuSelection)
+                        {
+                            case 0:
+                                healthIndex--;
+                                if (healthIndex < 0)
+                                    healthIndex = maxHealth.Length - 1;
+                                break;
+                            case 1:
+                                timeIndex--;
+                                if (timeIndex < 0)
+                                    timeIndex = timeLimit.Length - 1;
+                                break;
+                            default:
+                                break;
+                        }
+                    if (direction.y > 0f)
+                        menuSelection--;
+                    else if (direction.y < 0f)
+                        menuSelection++;
+                    if (menuSelection < 0)
+                        menuSelection = titleOptions.Length - 1;
+                    if (menuSelection >= titleOptions.Length)
+                        menuSelection = 0;
+                    UpdateGameOptions();
+                    break;
+                case MenuState.Game:
+                    break;
+                case MenuState.Quit:
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -284,32 +581,51 @@ public class Menu : MonoBehaviour
     {
         if (enableInput)
         {
-            if (menuState.Equals(MenuState.Main))
+            switch (menuState)
             {
-                switch (menuSelection)
-                {
-                    case 0:
+                case MenuState.Main:
+                    switch (menuSelection)
+                    {
+                        case 0:
+                            StopAllCoroutines();
+                            StartCoroutine(ChangeMenu(MenuState.PlayerSelect));
+                            break;
+                        case 1:
+                            Debug.Log("Settings");
+                            break;
+                        case 2:
+                            StopAllCoroutines();
+                            StartCoroutine(ChangeMenu(MenuState.Quit));
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case MenuState.PlayerSelect:
+                    if (menuSelection == 4 && !(players[0] == players[1] || players[0] == -1 || players[1] == -1))
+                    {
+                        StopAllCoroutines();
+                        StartCoroutine(ChangeMenu(MenuState.GameSettings));
+                    }
+                    break;
+                case MenuState.GameSettings:
+                    if(menuSelection == 2)
+                    {
                         StopAllCoroutines();
                         StartCoroutine(ChangeMenu(MenuState.Game));
-                        break;
-                    case 1:
-                        Debug.Log("Settings");
-                        break;
-                    case 2:
+                    }
+                    break;
+                case MenuState.Game:
+                    if (game != null && game.gameEnded)
+                    {
                         StopAllCoroutines();
-                        StartCoroutine(ChangeMenu(MenuState.Quit));
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else if (menuState.Equals(MenuState.Game))
-            {
-                if (game != null && game.gameEnded)
-                {
-                    StopAllCoroutines();
-                    StartCoroutine(ChangeMenu(MenuState.Main));
-                }
+                        StartCoroutine(ChangeMenu(MenuState.Main));
+                    }
+                    break;
+                case MenuState.Quit:
+                    break;
+                default:
+                    break;
             }
         }
     }
@@ -317,15 +633,31 @@ public class Menu : MonoBehaviour
     {
         if (enableInput)
         {
-            if (menuState.Equals(MenuState.Main))
+            switch (menuState)
             {
-                if (menuSelection == titleOptions.Length - 1)
-                {
+                case MenuState.Main:
+                    if (menuSelection == titleOptions.Length - 1)
+                    {
+                        StopAllCoroutines();
+                        StartCoroutine(ChangeMenu(MenuState.Quit));
+                    }
+                    menuSelection = titleOptions.Length - 1;
+                    UpdateMenuSelection();
+                    break;
+                case MenuState.PlayerSelect:
                     StopAllCoroutines();
-                    StartCoroutine(ChangeMenu(MenuState.Quit));
-                }
-                menuSelection = titleOptions.Length - 1;
-                UpdateMenuSelection();
+                    StartCoroutine(ChangeMenu(MenuState.Main));
+                    break;
+                case MenuState.GameSettings:
+                    StopAllCoroutines();
+                    StartCoroutine(ChangeMenu(MenuState.PlayerSelect));
+                    break;
+                case MenuState.Game:
+                    break;
+                case MenuState.Quit:
+                    break;
+                default:
+                    break;
             }
         }
     }
